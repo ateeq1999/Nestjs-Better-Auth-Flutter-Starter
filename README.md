@@ -1,5 +1,10 @@
 # Flutter Starter
 
+![Flutter](https://img.shields.io/badge/Flutter-3.x-blue?logo=flutter)
+![Dart](https://img.shields.io/badge/Dart-3.x-blue?logo=dart)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Tests](https://img.shields.io/badge/Tests-25%20passing-brightgreen)
+
 Cross-platform mobile app (iOS + Android) using Flutter + GetX. Authenticates against the NestJS Better-Auth API using Bearer tokens. Firebase handles push notifications and optional analytics.
 
 ---
@@ -321,3 +326,77 @@ flutter run
 - Platform check (`Platform.isAndroid`) in services, never in widgets
 - All `async` Dio calls are wrapped in `try/catch (DioException)`; map to typed `AppException`
 - Deep links tested on real devices — emulators may not handle custom schemes correctly
+
+---
+
+## Quick Reference
+
+### Common Commands
+
+```bash
+# Install dependencies
+flutter pub get
+
+# Run the app
+flutter run
+
+# Build debug APK
+flutter build apk --debug
+
+# Build release APK
+flutter build apk --release
+
+# Build iOS (requires macOS)
+flutter build ios --release
+
+# Run tests
+flutter test
+
+# Run with coverage
+flutter test --coverage
+
+# Analyze code
+flutter analyze
+
+# Clean and rebuild
+flutter clean && flutter pub get
+```
+
+### Directory Structure
+
+| Directory | Purpose |
+|-----------|---------|
+| `lib/app/core/` | Core utilities, DI, middleware, errors |
+| `lib/app/data/` | Models, providers, repositories |
+| `lib/app/modules/` | Feature modules (auth, home, profile, settings) |
+| `lib/app/routes/` | Route definitions |
+| `lib/app/services/` | GetxServices (auth, dio, notifications) |
+| `test/` | Unit and widget tests |
+| `integration_test/` | Integration tests |
+
+### API Endpoints Expected
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/sign-in/email` | Sign in with email/password |
+| POST | `/api/auth/sign-up/email` | Create new account |
+| POST | `/api/auth/sign-out` | Sign out |
+| POST | `/api/auth/forgot-password` | Request password reset |
+| POST | `/api/auth/reset-password` | Reset password with token |
+| POST | `/api/auth/change-password` | Change password |
+| POST | `/api/auth/verify-email` | Verify email address |
+| POST | `/api/auth/token/refresh` | Refresh access token |
+| GET | `/api/users/me` | Get current user |
+| PATCH | `/api/users/me` | Update user profile |
+| POST | `/api/users/me/avatar` | Upload avatar |
+| POST | `/api/users/device-tokens` | Register FCM token |
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines.
+
+## License
+
+MIT License - see [LICENSE](./LICENSE) for details.
