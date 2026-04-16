@@ -64,7 +64,7 @@ GoRouter createRouter({
     routes: [
       GoRoute(
         path: AppRoutes.splash,
-        builder: (_, __) => const SplashView(),
+        builder: (context, state) => const SplashView(),
       ),
 
       // ── Auth routes (guest-only) ──────────────────────────────────────────
@@ -132,7 +132,7 @@ GoRouter createRouter({
       // ── Protected routes (auth-required) ─────────────────────────────────
       GoRoute(
         path: AppRoutes.home,
-        builder: (_, __) => const HomeView(),
+        builder: (context, state) => const HomeView(),
       ),
       GoRoute(
         path: AppRoutes.profile,

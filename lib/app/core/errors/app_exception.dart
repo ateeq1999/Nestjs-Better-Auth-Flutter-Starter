@@ -22,7 +22,14 @@ class ApiException implements Exception {
         message: 'Server error',
       );
     }
-    return ApiException(message: 'Network error');
+    // BUG-12 fix: differentiate timeout from no-network.
+    final type = error.type?.toString() ?? '';
+    if (type.contains('connectionTimeout') ||
+        type.contains('sendTimeout') ||
+        type.contains('receiveTimeout')) {
+      return ApiException(message: 'Request timed out. Please try again.');
+    }
+    return ApiException(message: 'No internet connection. Please check your network.');
   }
 }
 
