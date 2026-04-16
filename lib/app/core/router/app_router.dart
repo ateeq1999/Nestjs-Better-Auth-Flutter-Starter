@@ -11,6 +11,8 @@ import '../../modules/auth/forgot_password/forgot_password_cubit.dart';
 import '../../modules/auth/reset_password/reset_password_cubit.dart';
 import '../../modules/auth/verify_email/verify_email_cubit.dart';
 import '../../modules/auth/two_factor/two_factor_cubit.dart';
+import '../../modules/auth/magic_link/magic_link_cubit.dart';
+import '../../modules/auth/magic_link/magic_link_view.dart';
 import '../../modules/profile/profile_cubit.dart';
 import '../../modules/settings/settings_cubit.dart';
 import '../../modules/splash/splash_view.dart';
@@ -128,6 +130,18 @@ GoRouter createRouter({
           child: const TwoFactorView(),
         ),
       ),
+      GoRoute(
+        path: AppRoutes.magicLink,
+        builder: (context, state) {
+          final token = state.uri.queryParameters['token'];
+          return BlocProvider(
+            create: (_) => MagicLinkCubit(
+              authRepository: context.read<AuthRepository>(),
+            ),
+            child: MagicLinkView(token: token),
+          );
+        },
+      ),
 
       // ── Protected routes (auth-required) ─────────────────────────────────
       GoRoute(
@@ -166,6 +180,7 @@ const _authRoutes = {
   AppRoutes.signUp,
   AppRoutes.forgotPassword,
   AppRoutes.twoFactor,
+  AppRoutes.magicLink,
 };
 
 /// Bridges a BLoC [Stream] to [ChangeNotifier] so GoRouter's

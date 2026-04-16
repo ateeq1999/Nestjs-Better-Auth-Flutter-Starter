@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../models/user.model.dart';
 import '../providers/user.provider.dart';
 import '../../core/errors/app_exception.dart';
+import '../../core/utils/response_parser.dart';
 
 class UserRepository {
   UserRepository(this._provider);
@@ -12,7 +13,7 @@ class UserRepository {
   Future<User> getMe() async {
     try {
       final response = await _provider.getMe();
-      return User.fromJson(response.data as Map<String, dynamic>);
+      return User.fromJson(unwrapEnvelope(response.data));
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
@@ -21,7 +22,7 @@ class UserRepository {
   Future<User> updateProfile({String? name, String? email}) async {
     try {
       final response = await _provider.updateProfile(name: name, email: email);
-      return User.fromJson(response.data as Map<String, dynamic>);
+      return User.fromJson(unwrapEnvelope(response.data));
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
@@ -30,7 +31,7 @@ class UserRepository {
   Future<User> uploadAvatar(String filePath) async {
     try {
       final response = await _provider.uploadAvatar(filePath);
-      return User.fromJson(response.data as Map<String, dynamic>);
+      return User.fromJson(unwrapEnvelope(response.data));
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
@@ -55,9 +56,9 @@ class UserRepository {
     }
   }
 
-  Future<void> deleteDeviceToken({required String token}) async {
+  Future<void> deleteDeviceToken({required String tokenId}) async {
     try {
-      await _provider.deleteDeviceToken(token: token);
+      await _provider.deleteDeviceToken(tokenId: tokenId);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }

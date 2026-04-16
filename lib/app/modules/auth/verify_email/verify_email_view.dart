@@ -29,6 +29,8 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
       listener: (context, state) {
         if (state is VerifyEmailFailure) {
           SnackbarHelper.showError(context, state.message);
+        } else if (state is VerifyEmailResent) {
+          SnackbarHelper.showSuccess(context, 'Verification email sent!');
         }
       },
       builder: (context, state) {
@@ -70,11 +72,19 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
                       onPressed: () => context.go(AppRoutes.signIn),
                       child: const Text('Continue'),
                     )
-                  else
+                  else ...[
+                    ElevatedButton(
+                      onPressed: context
+                          .read<VerifyEmailCubit>()
+                          .resendEmail,
+                      child: const Text('Resend Email'),
+                    ),
+                    const SizedBox(height: 12),
                     TextButton(
                       onPressed: () => context.go(AppRoutes.signIn),
                       child: const Text('Go to Sign In'),
                     ),
+                  ],
                 ],
               ),
             ),

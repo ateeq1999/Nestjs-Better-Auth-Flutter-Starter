@@ -25,4 +25,17 @@ class VerifyEmailCubit extends Cubit<VerifyEmailState> {
       emit(VerifyEmailFailure(e.toString()));
     }
   }
+
+  Future<void> resendEmail() async {
+    if (state is VerifyEmailLoading) return;
+    emit(const VerifyEmailLoading());
+    try {
+      await _authRepository.sendVerificationEmail();
+      emit(const VerifyEmailResent());
+    } on ApiException catch (e) {
+      emit(VerifyEmailFailure(e.message));
+    } catch (e) {
+      emit(VerifyEmailFailure(e.toString()));
+    }
+  }
 }

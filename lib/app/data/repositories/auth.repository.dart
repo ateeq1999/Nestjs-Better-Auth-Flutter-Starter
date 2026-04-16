@@ -21,13 +21,15 @@ class AuthRepository {
     }
   }
 
-  Future<void> signUp({
+  Future<AuthResponse> signUp({
     required String email,
     required String password,
     required String name,
   }) async {
     try {
-      await _provider.signUp(email: email, password: password, name: name);
+      final response =
+          await _provider.signUp(email: email, password: password, name: name);
+      return AuthResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
@@ -82,7 +84,14 @@ class AuthRepository {
     }
   }
 
-  /// Verifies a TOTP two-factor code against the API (BUG-05 fix).
+  Future<void> sendVerificationEmail() async {
+    try {
+      await _provider.sendVerificationEmail();
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
   Future<AuthResponse> verifyTwoFactor({required String code}) async {
     try {
       final response = await _provider.verifyTwoFactor(code: code);
@@ -92,12 +101,25 @@ class AuthRepository {
     }
   }
 
-  /// Returns the TOTP URI (otpauth://...) to render a QR code for 2FA setup.
-  Future<String> enableTwoFactor() async {
+  /// Returns the TOTP URI (`otpauth://...`) and base64 QR code PNG.
+  /// BUG-R2 fix: API returns `{qrCode, uri}` — was wrongly reading `totpUri`.
+  Future<({String uri, String qrCode})> enableTwoFactor() async {
     try {
       final response = await _provider.enableTwoFactor();
       final data = response.data as Map<String, dynamic>;
-      return data['totpUri'] as String;
+      return (
+        uri: data['uri'] as String,
+        qrCode: data['qrCode'] as String? ?? '',
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  /// Confirm 2FA setup by verifying the first TOTP code from the authenticator.
+  Future<void> verifyTwoFactorSetup({required String code}) async {
+    try {
+      await _provider.verifyTwoFactorSetup(code: code);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
@@ -106,6 +128,23 @@ class AuthRepository {
   Future<void> disableTwoFactor({required String code}) async {
     try {
       await _provider.disableTwoFactor(code: code);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<void> sendMagicLink({required String email}) async {
+    try {
+      await _provider.sendMagicLink(email: email);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<AuthResponse> verifyMagicLink({required String token}) async {
+    try {
+      final response = await _provider.verifyMagicLink(token: token);
+      return AuthResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }

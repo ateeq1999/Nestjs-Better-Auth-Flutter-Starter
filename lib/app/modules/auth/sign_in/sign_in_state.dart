@@ -13,9 +13,15 @@ final class SignInLoading extends SignInState {
 }
 
 final class SignInSuccess extends SignInState {
-  const SignInSuccess({required this.token, required this.user});
-  final String token;
+  const SignInSuccess({this.token, required this.user});
+  // null when email verification is required before first sign-in
+  final String? token;
   final User user;
+}
+
+/// API indicated 2FA is required to complete sign-in.
+final class SignInTwoFactorRequired extends SignInState {
+  const SignInTwoFactorRequired();
 }
 
 final class SignInFailure extends SignInState {

@@ -30,6 +30,11 @@ class SignInCubit extends Cubit<SignInState> {
         email: email.trim(),
         password: password,
       );
+      // FL5.3: API returns twoFactorEnabled=true with no token → 2FA required.
+      if (response.token == null && response.user.twoFactorEnabled) {
+        emit(const SignInTwoFactorRequired());
+        return;
+      }
       emit(SignInSuccess(token: response.token, user: response.user));
     } on ApiException catch (e) {
       emit(SignInFailure(e.message)); // BUG-10 fix: use typed message

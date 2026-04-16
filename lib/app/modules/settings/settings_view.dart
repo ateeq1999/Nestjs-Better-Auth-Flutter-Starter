@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/utils/snackbar_helper.dart';
+import '../auth/auth_bloc.dart';
 import 'settings_cubit.dart';
 
 class SettingsView extends StatelessWidget {
@@ -15,9 +17,14 @@ class SettingsView extends StatelessWidget {
           SnackbarHelper.showSuccess(context, 'Password changed successfully');
           context.read<SettingsCubit>().resetToInitial();
         } else if (state is SettingsTwoFactorEnabled) {
-          _showTwoFactorQrDialog(context, state.totpUri);
+          _showTwoFactorQrDialog(context, state.uri, state.qrCode);
+        } else if (state is SettingsTwoFactorVerified) {
+          SnackbarHelper.showSuccess(
+              context, 'Two-factor authentication enabled');
+          context.read<SettingsCubit>().resetToInitial();
         } else if (state is SettingsTwoFactorDisabled) {
-          SnackbarHelper.showSuccess(context, 'Two-factor authentication disabled');
+          SnackbarHelper.showSuccess(
+              context, 'Two-factor authentication disabled');
           context.read<SettingsCubit>().resetToInitial();
         } else if (state is SettingsFailure) {
           SnackbarHelper.showError(context, state.message);
@@ -27,6 +34,11 @@ class SettingsView extends StatelessWidget {
       builder: (context, state) {
         final cubit = context.read<SettingsCubit>();
         final isLoading = state is SettingsLoading;
+        // FL7.6: read twoFactorEnabled from AuthBloc user
+        final authState = context.watch<AuthBloc>().state;
+        final twoFactorEnabled = authState is AuthAuthenticated
+            ? authState.user.twoFactorEnabled
+            : false;
 
         return Scaffold(
           appBar: AppBar(title: const Text('Settings')),
@@ -38,21 +50,31 @@ class SettingsView extends StatelessWidget {
                       leading: const Icon(Icons.lock),
                       title: const Text('Change Password'),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () =>
-                          _showChangePasswordDialog(context, cubit),
+                      onTap: () => _showChangePasswordDialog(context, cubit),
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.security),
-                      title: const Text('Enable Two-Factor Auth'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: cubit.enableTwoFactor,
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.no_encryption_outlined, color: Colors.orange),
-                      title: const Text('Disable Two-Factor Auth'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => _showDisableTwoFactorDialog(context, cubit),
-                    ),
+                    const Divider(),
+                    if (!twoFactorEnabled)
+                      ListTile(
+                        leading: const Icon(Icons.security),
+                        title: const Text('Enable Two-Factor Auth'),
+                        subtitle: const Text('Add TOTP authenticator app'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: cubit.enableTwoFactor,
+                      ),
+                    if (twoFactorEnabled)
+                      ListTile(
+                        leading: const Icon(Icons.verified_user,
+                            color: Colors.green),
+                        title: const Text('Two-Factor Auth'),
+                        subtitle: const Text('Enabled'),
+                        trailing: TextButton(
+                          onPressed: () =>
+                              _showDisableTwoFactorDialog(context, cubit),
+                          child: const Text('Disable',
+                              style: TextStyle(color: Colors.red)),
+                        ),
+                      ),
+                    const Divider(),
                     SwitchListTile(
                       secondary: const Icon(Icons.dark_mode),
                       title: const Text('Dark Mode'),
@@ -72,22 +94,60 @@ class SettingsView extends StatelessWidget {
     );
   }
 
-  void _showTwoFactorQrDialog(BuildContext context, String totpUri) {
+  void _showTwoFactorQrDialog(
+      BuildContext context, String uri, String qrCode) {
+    final codeController = TextEditingController();
+    final cubit = context.read<SettingsCubit>();
     showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Enable Two-Factor Authentication'),
+        title: const Text('Enable Two-Factor Auth'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Scan this URI with your authenticator app, then confirm with your 6-digit code.',
-              textAlign: TextAlign.center,
+              '1. Open your authenticator app (Google Authenticator, Authy, etc.).',
+            ),
+            const SizedBox(height: 8),
+            const Text('2. Scan this URI or enter it manually:'),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SelectableText(uri,
+                        style: const TextStyle(fontSize: 10)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy, size: 16),
+                    onPressed: () =>
+                        Clipboard.setData(ClipboardData(text: uri)),
+                    tooltip: 'Copy URI',
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
-            SelectableText(
-              totpUri,
-              style: const TextStyle(fontSize: 11),
+            const Text('3. Enter the 6-digit code to confirm setup:'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: codeController,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              textAlign: TextAlign.center,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: const InputDecoration(
+                hintText: '------',
+                border: OutlineInputBorder(),
+                counterText: '',
+              ),
             ),
           ],
         ),
@@ -95,28 +155,42 @@ class SettingsView extends StatelessWidget {
           TextButton(
             onPressed: () {
               Navigator.of(dialogContext).pop();
-              context.read<SettingsCubit>().resetToInitial();
+              cubit.resetToInitial();
             },
-            child: const Text('Done'),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final code = codeController.text.trim();
+              if (code.length == 6) {
+                Navigator.of(dialogContext).pop();
+                cubit.verifyTwoFactorSetup(code: code);
+              }
+            },
+            child: const Text('Confirm'),
           ),
         ],
       ),
     );
   }
 
-  void _showDisableTwoFactorDialog(BuildContext context, SettingsCubit cubit) {
+  void _showDisableTwoFactorDialog(
+      BuildContext context, SettingsCubit cubit) {
     final codeController = TextEditingController();
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Disable Two-Factor Authentication'),
+        title: const Text('Disable Two-Factor Auth'),
         content: TextField(
           controller: codeController,
           keyboardType: TextInputType.number,
           maxLength: 6,
+          textAlign: TextAlign.center,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           decoration: const InputDecoration(
             labelText: '6-digit TOTP code',
             border: OutlineInputBorder(),
+            counterText: '',
           ),
         ),
         actions: [
@@ -125,11 +199,16 @@ class SettingsView extends StatelessWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
-              Navigator.of(dialogContext).pop();
-              cubit.disableTwoFactor(code: codeController.text.trim());
+              final code = codeController.text.trim();
+              if (code.isNotEmpty) {
+                Navigator.of(dialogContext).pop();
+                cubit.disableTwoFactor(code: code);
+              }
             },
-            child: const Text('Disable'),
+            child: const Text('Disable',
+                style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -140,7 +219,6 @@ class SettingsView extends StatelessWidget {
       BuildContext context, SettingsCubit cubit) {
     final currentPassController = TextEditingController();
     final newPassController = TextEditingController();
-
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -158,8 +236,7 @@ class SettingsView extends StatelessWidget {
             TextField(
               controller: newPassController,
               obscureText: true,
-              decoration:
-                  const InputDecoration(labelText: 'New Password'),
+              decoration: const InputDecoration(labelText: 'New Password'),
             ),
           ],
         ),

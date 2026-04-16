@@ -26,12 +26,22 @@ final class SettingsFailure extends SettingsState {
 }
 
 final class SettingsTwoFactorEnabled extends SettingsState {
-  const SettingsTwoFactorEnabled({required this.isDarkMode, required this.totpUri});
+  const SettingsTwoFactorEnabled({
+    required this.isDarkMode,
+    required this.uri,
+    required this.qrCode,
+  });
   final bool isDarkMode;
-  final String totpUri;
+  final String uri;
+  final String qrCode;
 }
 
 final class SettingsTwoFactorDisabled extends SettingsState {
   const SettingsTwoFactorDisabled({required this.isDarkMode});
+  final bool isDarkMode;
+}
+
+final class SettingsTwoFactorVerified extends SettingsState {
+  const SettingsTwoFactorVerified({required this.isDarkMode});
   final bool isDarkMode;
 }

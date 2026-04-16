@@ -5,13 +5,14 @@ class UserProvider {
 
   final Dio _dio;
 
-  Future<Response<dynamic>> getMe() => _dio.get('/api/users/me');
+  // BUG-U6: was /api/users/me
+  Future<Response<dynamic>> getMe() => _dio.get('/v1/api/users/me');
 
   Future<Response<dynamic>> updateProfile({String? name, String? email}) {
     final data = <String, dynamic>{};
     if (name != null) data['name'] = name;
     if (email != null) data['email'] = email;
-    return _dio.patch('/api/users/me', data: data);
+    return _dio.patch('/v1/api/users/me', data: data);
   }
 
   Future<Response<dynamic>> uploadAvatar(String filePath) async {
@@ -19,24 +20,26 @@ class UserProvider {
       'avatar': await MultipartFile.fromFile(filePath),
     });
     return _dio.post(
-      '/api/users/me/avatar',
+      '/v1/api/users/me/avatar',
       data: formData,
       options: Options(contentType: 'multipart/form-data'),
     );
   }
 
   Future<Response<dynamic>> deleteAvatar() =>
-      _dio.delete('/api/users/me/avatar');
+      _dio.delete('/v1/api/users/me/avatar');
 
+  // BUG-U5: was /api/users/me/devices
   Future<Response<dynamic>> registerDeviceToken({
     required String token,
     required String platform,
   }) =>
       _dio.post(
-        '/api/users/me/devices',
+        '/v1/api/users/me/device-tokens',
         data: {'token': token, 'platform': platform},
       );
 
-  Future<Response<dynamic>> deleteDeviceToken({required String token}) =>
-      _dio.delete('/api/users/me/devices', data: {'token': token});
+  // BUG-U5: was /api/users/me/devices
+  Future<Response<dynamic>> deleteDeviceToken({required String tokenId}) =>
+      _dio.delete('/v1/api/users/me/device-tokens/$tokenId');
 }

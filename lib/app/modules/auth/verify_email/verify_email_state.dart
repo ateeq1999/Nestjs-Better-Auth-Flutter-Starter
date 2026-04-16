@@ -20,3 +20,7 @@ final class VerifyEmailFailure extends VerifyEmailState {
   const VerifyEmailFailure(this.message);
   final String message;
 }
+
+final class VerifyEmailResent extends VerifyEmailState {
+  const VerifyEmailResent();
+}

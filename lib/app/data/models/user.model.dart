@@ -4,7 +4,10 @@ class User {
   final String? name;
   final String? image;
   final bool emailVerified;
+  final bool twoFactorEnabled;
+  final String? role;
   final DateTime createdAt;
+  final DateTime? updatedAt;
 
   const User({
     required this.id,
@@ -12,7 +15,10 @@ class User {
     this.name,
     this.image,
     required this.emailVerified,
+    this.twoFactorEnabled = false,
+    this.role,
     required this.createdAt,
+    this.updatedAt,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -21,8 +27,13 @@ class User {
       email: json['email'] as String,
       name: json['name'] as String?,
       image: json['image'] as String?,
-      emailVerified: json['emailVerified'] as bool,
+      emailVerified: json['emailVerified'] as bool? ?? false,
+      twoFactorEnabled: json['twoFactorEnabled'] as bool? ?? false,
+      role: json['role'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -33,7 +44,10 @@ class User {
       'name': name,
       'image': image,
       'emailVerified': emailVerified,
+      'twoFactorEnabled': twoFactorEnabled,
+      'role': role,
       'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 
@@ -43,7 +57,10 @@ class User {
     String? name,
     String? image,
     bool? emailVerified,
+    bool? twoFactorEnabled,
+    String? role,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return User(
       id: id ?? this.id,
@@ -51,7 +68,10 @@ class User {
       name: name ?? this.name,
       image: image ?? this.image,
       emailVerified: emailVerified ?? this.emailVerified,
+      twoFactorEnabled: twoFactorEnabled ?? this.twoFactorEnabled,
+      role: role ?? this.role,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

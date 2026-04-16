@@ -102,7 +102,7 @@ class _AuthInterceptor extends Interceptor {
     if (token == null) return false;
 
     final response = await _refreshDio.post(
-      '/api/auth/token/refresh',
+      '/v1/api/auth/token/refresh',
       options: Options(headers: {'Authorization': 'Bearer $token'}),
     );
 

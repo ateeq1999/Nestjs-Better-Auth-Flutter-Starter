@@ -34,6 +34,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       SettingsFailure(:final isDarkMode) => isDarkMode,
       SettingsTwoFactorEnabled(:final isDarkMode) => isDarkMode,
       SettingsTwoFactorDisabled(:final isDarkMode) => isDarkMode,
+      SettingsTwoFactorVerified(:final isDarkMode) => isDarkMode,
     };
   }
 
@@ -77,8 +78,24 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> enableTwoFactor() async {
     emit(SettingsLoading(isDarkMode: isDarkMode));
     try {
-      final totpUri = await _authRepository.enableTwoFactor();
-      emit(SettingsTwoFactorEnabled(isDarkMode: isDarkMode, totpUri: totpUri));
+      final result = await _authRepository.enableTwoFactor();
+      emit(SettingsTwoFactorEnabled(
+        isDarkMode: isDarkMode,
+        uri: result.uri,
+        qrCode: result.qrCode,
+      ));
+    } on ApiException catch (e) {
+      emit(SettingsFailure(e.message, isDarkMode: isDarkMode));
+    } catch (e) {
+      emit(SettingsFailure(e.toString(), isDarkMode: isDarkMode));
+    }
+  }
+
+  Future<void> verifyTwoFactorSetup({required String code}) async {
+    emit(SettingsLoading(isDarkMode: isDarkMode));
+    try {
+      await _authRepository.verifyTwoFactorSetup(code: code);
+      emit(SettingsTwoFactorVerified(isDarkMode: isDarkMode));
     } on ApiException catch (e) {
       emit(SettingsFailure(e.message, isDarkMode: isDarkMode));
     } catch (e) {

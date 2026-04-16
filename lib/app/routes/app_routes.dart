@@ -6,6 +6,7 @@ abstract class AppRoutes {
   static const resetPassword = '/reset-password';
   static const verifyEmail = '/verify-email';
   static const twoFactor = '/two-factor';
+  static const magicLink = '/magic-link';
   static const home = '/home';
   static const profile = '/profile';
   static const settings = '/settings';
