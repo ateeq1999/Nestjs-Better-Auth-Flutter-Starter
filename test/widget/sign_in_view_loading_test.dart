@@ -1,61 +1,68 @@
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:flutter_starter/app/modules/auth/sign_in/sign_in_controller.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:flutter_starter/app/modules/auth/auth_bloc.dart';
+import 'package:flutter_starter/app/modules/auth/sign_in/sign_in_cubit.dart';
 import 'package:flutter_starter/app/modules/auth/sign_in/sign_in_view.dart';
+import 'package:flutter_starter/app/services/auth_service.dart';
 
-class MockSignInController extends GetxController
-    with Mock
-    implements SignInController {
+class MockSignInCubit extends MockCubit<SignInState> implements SignInCubit {
   @override
-  final formKey = GlobalKey<FormState>();
-  @override
-  final emailController = TextEditingController();
-  @override
-  final passwordController = TextEditingController();
-  @override
-  final isLoading = false.obs;
-  @override
-  final isPasswordHidden = true.obs;
+  bool get isPasswordHidden => true;
+}
 
-  @override
-  void togglePasswordVisibility() {}
+class MockAuthBloc extends MockBloc<AuthEvent, AuthState> implements AuthBloc {}
 
+class MockAuthService extends Mock implements AuthService {
   @override
-  void goToForgotPassword() {}
+  Stream<AuthStatus> get status => const Stream.empty();
+}
 
-  @override
-  void goToSignUp() {}
-
-  @override
-  Future<void> signIn() async {}
+Widget _buildSut({
+  required SignInCubit cubit,
+  required AuthBloc authBloc,
+}) {
+  return MaterialApp.router(
+    routerConfig: GoRouter(
+      initialLocation: '/sign-in',
+      routes: [
+        GoRoute(
+          path: '/sign-in',
+          builder: (ctx, _) => MultiBlocProvider(
+            providers: [
+              BlocProvider<AuthBloc>.value(value: authBloc),
+              BlocProvider<SignInCubit>.value(value: cubit),
+            ],
+            child: const SignInView(),
+          ),
+        ),
+        GoRoute(path: '/home', builder: (_, _) => const Scaffold()),
+      ],
+    ),
+  );
 }
 
 void main() {
-  late MockSignInController mockController;
+  late MockSignInCubit mockCubit;
+  late MockAuthBloc mockAuthBloc;
 
   setUp(() {
-    Get.testMode = true;
-    mockController = MockSignInController();
-    Get.put<SignInController>(mockController);
+    mockCubit = MockSignInCubit();
+    mockAuthBloc = MockAuthBloc();
+    when(() => mockAuthBloc.state).thenReturn(const AuthUnauthenticated());
   });
 
-  tearDown(() {
-    Get.reset();
-  });
+  group('SignInView — loading indicator', () {
+    testWidgets('shows CircularProgressIndicator when state is SignInLoading',
+        (tester) async {
+      when(() => mockCubit.state).thenReturn(const SignInLoading());
 
-  Widget buildTestWidget() {
-    return GetMaterialApp(home: const SignInView());
-  }
-
-  group('SignInView loading indicator', () {
-    testWidgets('shows loading indicator when isLoading is true', (
-      WidgetTester tester,
-    ) async {
-      mockController.isLoading.value = true;
-
-      await tester.pumpWidget(buildTestWidget());
+      await tester
+          .pumpWidget(_buildSut(cubit: mockCubit, authBloc: mockAuthBloc));
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -68,12 +75,12 @@ void main() {
       );
     });
 
-    testWidgets('shows button text when isLoading is false', (
-      WidgetTester tester,
-    ) async {
-      mockController.isLoading.value = false;
+    testWidgets('shows Sign In text when state is SignInInitial',
+        (tester) async {
+      when(() => mockCubit.state).thenReturn(const SignInInitial());
 
-      await tester.pumpWidget(buildTestWidget());
+      await tester
+          .pumpWidget(_buildSut(cubit: mockCubit, authBloc: mockAuthBloc));
       await tester.pump();
 
       expect(
@@ -86,38 +93,42 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
-    testWidgets('button is disabled during loading', (
-      WidgetTester tester,
-    ) async {
-      mockController.isLoading.value = true;
+    testWidgets('ElevatedButton.onPressed is null during loading',
+        (tester) async {
+      when(() => mockCubit.state).thenReturn(const SignInLoading());
 
-      await tester.pumpWidget(buildTestWidget());
+      await tester
+          .pumpWidget(_buildSut(cubit: mockCubit, authBloc: mockAuthBloc));
       await tester.pump();
 
-      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+      final button =
+          tester.widget<ElevatedButton>(find.byType(ElevatedButton));
       expect(button.onPressed, isNull);
     });
 
-    testWidgets('button is enabled when not loading', (
-      WidgetTester tester,
-    ) async {
-      mockController.isLoading.value = false;
+    testWidgets('ElevatedButton.onPressed is not null when not loading',
+        (tester) async {
+      when(() => mockCubit.state).thenReturn(const SignInInitial());
 
-      await tester.pumpWidget(buildTestWidget());
+      await tester
+          .pumpWidget(_buildSut(cubit: mockCubit, authBloc: mockAuthBloc));
       await tester.pump();
 
-      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+      final button =
+          tester.widget<ElevatedButton>(find.byType(ElevatedButton));
       expect(button.onPressed, isNotNull);
     });
 
-    testWidgets('tapping sign in shows loading then completes', (
-      WidgetTester tester,
-    ) async {
-      mockController.isLoading.value = false;
+    testWidgets('shows no progress indicator when in failure state',
+        (tester) async {
+      when(() => mockCubit.state)
+          .thenReturn(const SignInFailure('Invalid credentials'));
 
-      await tester.pumpWidget(buildTestWidget());
+      await tester
+          .pumpWidget(_buildSut(cubit: mockCubit, authBloc: mockAuthBloc));
       await tester.pump();
 
+      expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(
         find.descendant(
           of: find.byType(ElevatedButton),
@@ -125,7 +136,6 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
   });
 }

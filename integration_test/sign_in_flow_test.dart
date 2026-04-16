@@ -1,143 +1,190 @@
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:flutter_starter/app/modules/auth/sign_in/sign_in_controller.dart';
-import 'package:flutter_starter/app/modules/auth/sign_in/sign_in_view.dart';
-import 'package:flutter_starter/app/modules/home/home_controller.dart';
-import 'package:flutter_starter/app/modules/home/home_view.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:flutter_starter/app/data/models/auth_response.model.dart';
+import 'package:flutter_starter/app/data/models/user.model.dart';
 import 'package:flutter_starter/app/data/repositories/auth.repository.dart';
+import 'package:flutter_starter/app/modules/auth/auth_bloc.dart';
+import 'package:flutter_starter/app/modules/auth/sign_in/sign_in_cubit.dart';
+import 'package:flutter_starter/app/modules/auth/sign_in/sign_in_view.dart';
+import 'package:flutter_starter/app/modules/home/home_view.dart';
+import 'package:flutter_starter/app/modules/auth/forgot_password/forgot_password_view.dart';
+import 'package:flutter_starter/app/modules/auth/sign_up/sign_up_view.dart';
+import 'package:flutter_starter/app/modules/auth/sign_up/sign_up_cubit.dart';
 import 'package:flutter_starter/app/services/auth_service.dart';
 import 'package:flutter_starter/app/routes/app_routes.dart';
-import 'package:flutter_starter/app/routes/app_pages.dart';
 
-class MockSignInController extends GetxController
-    with Mock
-    implements SignInController {
-  @override
-  final formKey = GlobalKey<FormState>();
-  @override
-  final emailController = TextEditingController();
-  @override
-  final passwordController = TextEditingController();
-  @override
-  final isLoading = false.obs;
-  @override
-  final isPasswordHidden = true.obs;
+// ── Mocks ────────────────────────────────────────────────────────────────────
 
-  bool signInCalled = false;
-
-  @override
-  void togglePasswordVisibility() {}
-
-  @override
-  void goToForgotPassword() {}
-
-  @override
-  void goToSignUp() {}
-
-  @override
-  Future<void> signIn() async {
-    signInCalled = true;
-  }
-}
-
-class MockHomeController extends GetxController
-    with Mock
-    implements HomeController {
-  @override
-  String get userName => 'Test User';
-
-  @override
-  String get userEmail => 'test@example.com';
-
-  @override
-  void navigateToProfile() {}
-
-  @override
-  void navigateToSettings() {}
-}
+class MockAuthBloc extends MockBloc<AuthEvent, AuthState> implements AuthBloc {}
 
 class MockAuthRepository extends Mock implements AuthRepository {}
 
-class MockAuthService extends Mock implements AuthService {}
+class MockAuthService extends Mock implements AuthService {
+  @override
+  Stream<AuthStatus> get status => const Stream.empty();
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+final _testUser = User(
+  id: 'user-1',
+  email: 'test@example.com',
+  name: 'Test User',
+  emailVerified: true,
+  createdAt: DateTime(2024),
+);
+
+/// Builds a minimal GoRouter for sign-in flow tests.
+Widget _buildApp({
+  required AuthBloc authBloc,
+  required AuthRepository authRepository,
+}) {
+  final router = GoRouter(
+    initialLocation: AppRoutes.signIn,
+    routes: [
+      GoRoute(
+        path: AppRoutes.signIn,
+        builder: (context, _) => MultiBlocProvider(
+          providers: [
+            BlocProvider<AuthBloc>.value(value: authBloc),
+            BlocProvider(
+              create: (_) =>
+                  SignInCubit(authRepository: authRepository),
+            ),
+          ],
+          child: const SignInView(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.signUp,
+        builder: (context, _) => BlocProvider(
+          create: (_) => SignUpCubit(authRepository: authRepository),
+          child: const SignUpView(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.forgotPassword,
+        builder: (_, _) => const ForgotPasswordView(),
+      ),
+      GoRoute(
+        path: AppRoutes.home,
+        builder: (_, _) => BlocProvider<AuthBloc>.value(
+          value: authBloc,
+          child: const HomeView(),
+        ),
+      ),
+    ],
+  );
+
+  return MaterialApp.router(routerConfig: router);
+}
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Sign-in to Home Navigation Flow', () {
-    testWidgets('full sign-in flow navigates to home', (
-      WidgetTester tester,
-    ) async {
-      Get.testMode = true;
+  late MockAuthBloc mockAuthBloc;
+  late MockAuthRepository mockAuthRepository;
 
-      final mockAuthService = MockAuthService();
-      Get.put<AuthService>(mockAuthService);
+  setUpAll(() {
+    registerFallbackValue(_testUser);
+  });
 
-      when(() => mockAuthService.token).thenReturn(Rxn<String>(null));
-      when(() => mockAuthService.currentUser).thenReturn(Rxn());
-      when(() => mockAuthService.saveToken(any())).thenAnswer((_) async {});
-      when(
-        () => mockAuthService.setCurrentUser(any()),
-      ).thenAnswer((_) async {});
+  setUp(() {
+    mockAuthBloc = MockAuthBloc();
+    mockAuthRepository = MockAuthRepository();
+    when(() => mockAuthBloc.state).thenReturn(const AuthUnauthenticated());
+  });
 
-      Get.testMode = true;
+  group('Sign-in flow', () {
+    testWidgets('SignInView renders form fields and buttons', (tester) async {
+      await tester.pumpWidget(
+          _buildApp(authBloc: mockAuthBloc, authRepository: mockAuthRepository));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sign In'), findsWidgets);
+      expect(find.byType(TextFormField), findsWidgets);
+      expect(find.text('Forgot Password?'), findsOneWidget);
+      expect(find.text("Don't have an account?"), findsOneWidget);
+    });
+
+    testWidgets('successful sign-in updates AuthBloc and navigates to home',
+        (tester) async {
+      when(() => mockAuthRepository.signIn(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          )).thenAnswer(
+        (_) async => AuthResponse(token: 'tok', user: _testUser),
+      );
 
       await tester.pumpWidget(
-        GetMaterialApp(
-          initialRoute: AppRoutes.signIn,
-          getPages: AppPages.pages,
-        ),
-      );
-
+          _buildApp(authBloc: mockAuthBloc, authRepository: mockAuthRepository));
       await tester.pumpAndSettle();
-
-      expect(find.text('Sign In'), findsOneWidget);
-      expect(find.byType(TextFormField), findsWidgets);
 
       await tester.enterText(
-        find.byType(TextFormField).first,
-        'test@example.com',
+          find.widgetWithText(TextFormField, 'Email'), 'test@example.com');
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Password'), 'password123');
+
+      await tester.tap(
+        find.descendant(
+            of: find.byType(ElevatedButton), matching: find.text('Sign In')),
       );
-      await tester.enterText(find.byType(TextFormField).last, 'password123');
-
-      await tester.tap(find.text('Sign In'));
-      await tester.pump();
-
-      final mockSignInController = Get.find<SignInController>();
-      expect(mockSignInController, isNotNull);
-
-      await Get.offAllNamed(AppRoutes.home);
       await tester.pumpAndSettle();
 
-      expect(find.text('Home'), findsOneWidget);
+      // AuthBloc should receive AuthUserChanged from the listener.
+      verify(() => mockAuthBloc.add(any(that: isA<AuthUserChanged>()))).called(1);
     });
 
-    testWidgets('navigate to sign-up from sign-in', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(GetMaterialApp(home: const SignInView()));
-
+    testWidgets('tapping Sign Up navigates to sign-up screen', (tester) async {
+      await tester.pumpWidget(
+          _buildApp(authBloc: mockAuthBloc, authRepository: mockAuthRepository));
       await tester.pumpAndSettle();
 
-      expect(find.text("Don't have an account?"), findsOneWidget);
-      expect(find.text('Sign Up'), findsOneWidget);
-    });
-
-    testWidgets('navigate to forgot password from sign-in', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(GetMaterialApp(home: const SignInView()));
-
+      await tester.tap(find.text('Sign Up'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Forgot Password?'), findsOneWidget);
+      expect(find.text('Sign Up'), findsWidgets);
+      expect(find.byType(SignUpView), findsOneWidget);
     });
 
-    testWidgets('home view displays user info', (WidgetTester tester) async {
-      await tester.pumpWidget(GetMaterialApp(home: const HomeView()));
+    testWidgets('tapping Forgot Password navigates to forgot-password screen',
+        (tester) async {
+      await tester.pumpWidget(
+          _buildApp(authBloc: mockAuthBloc, authRepository: mockAuthRepository));
+      await tester.pumpAndSettle();
 
+      await tester.tap(find.text('Forgot Password?'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ForgotPasswordView), findsOneWidget);
+    });
+
+    testWidgets('HomeView displays user info from AuthBloc', (tester) async {
+      when(() => mockAuthBloc.state)
+          .thenReturn(AuthAuthenticated(user: _testUser, token: 'tok'));
+
+      final router = GoRouter(
+        initialLocation: AppRoutes.home,
+        routes: [
+          GoRoute(
+            path: AppRoutes.home,
+            builder: (_, _) => BlocProvider<AuthBloc>.value(
+              value: mockAuthBloc,
+              child: const HomeView(),
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Welcome,'), findsOneWidget);

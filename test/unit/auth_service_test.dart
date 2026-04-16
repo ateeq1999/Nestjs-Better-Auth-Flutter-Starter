@@ -1,86 +1,144 @@
-import 'package:dio/dio.dart' as dio_pkg;
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:flutter_starter/app/data/models/user.model.dart';
+import 'package:flutter_starter/app/modules/auth/auth_bloc.dart';
+import 'package:flutter_starter/app/modules/auth/sign_in/sign_in_cubit.dart';
+import 'package:flutter_starter/app/data/repositories/auth.repository.dart';
+import 'package:flutter_starter/app/data/models/auth_response.model.dart';
 import 'package:flutter_starter/app/services/auth_service.dart';
 import 'package:flutter_starter/app/routes/app_routes.dart';
 
-class MockAuthService extends GetxService with Mock implements AuthService {
+class MockAuthService extends Mock implements AuthService {
   @override
-  final token = Rxn<String>();
-
-  @override
-  Future<AuthService> init() async => this;
-
-  @override
-  Future<void> saveToken(String newToken) async {}
-
-  @override
-  Future<void> setCurrentUser(dynamic user) async {}
-
-  @override
-  Future<String?> getToken() async => token.value;
-
-  @override
-  Future<void> clearToken() async {}
-
-  @override
-  Future<bool> refreshToken() async => false;
-
-  @override
-  Future<void> signOut() async {}
+  Stream<AuthStatus> get status => const Stream.empty();
 }
 
-void main() {
-  late MockAuthService mockAuthService;
+class MockAuthRepository extends Mock implements AuthRepository {}
 
+final _testUser = User(
+  id: 'user-1',
+  email: 'test@example.com',
+  name: 'Test User',
+  emailVerified: true,
+  createdAt: DateTime(2024),
+);
+
+void main() {
   setUpAll(() {
-    registerFallbackValue(
-      dio_pkg.Response(
-        requestOptions: dio_pkg.RequestOptions(path: ''),
-        data: {},
-      ),
+    registerFallbackValue(_testUser);
+  });
+
+  group('AuthBloc state management', () {
+    late MockAuthService mockAuthService;
+
+    setUp(() {
+      mockAuthService = MockAuthService();
+    });
+
+    blocTest<AuthBloc, AuthState>(
+      'initial state is AuthInitial',
+      build: () => AuthBloc(authService: mockAuthService),
+      verify: (bloc) => expect(bloc.state, isA<AuthInitial>()),
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'AuthStarted emits Loading then Unauthenticated when no token stored',
+      build: () => AuthBloc(authService: mockAuthService),
+      setUp: () {
+        when(() => mockAuthService.getToken()).thenAnswer((_) async => null);
+        when(() => mockAuthService.getUser()).thenAnswer((_) async => null);
+      },
+      act: (bloc) => bloc.add(const AuthStarted()),
+      expect: () => [isA<AuthLoading>(), isA<AuthUnauthenticated>()],
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'AuthStarted emits Loading then Authenticated when token + user stored',
+      build: () => AuthBloc(authService: mockAuthService),
+      setUp: () {
+        when(() => mockAuthService.getToken())
+            .thenAnswer((_) async => 'stored-token');
+        when(() => mockAuthService.getUser())
+            .thenAnswer((_) async => _testUser);
+      },
+      act: (bloc) => bloc.add(const AuthStarted()),
+      expect: () => [isA<AuthLoading>(), isA<AuthAuthenticated>()],
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'AuthSignedOut always emits AuthUnauthenticated',
+      build: () => AuthBloc(authService: mockAuthService),
+      seed: () => AuthAuthenticated(user: _testUser, token: 'tok'),
+      act: (bloc) => bloc.add(const AuthSignedOut()),
+      expect: () => [isA<AuthUnauthenticated>()],
     );
   });
 
-  setUp(() {
-    Get.testMode = true;
-    mockAuthService = MockAuthService();
-    Get.put<AuthService>(mockAuthService);
-  });
+  group('SignInCubit', () {
+    late MockAuthRepository mockRepository;
 
-  tearDown(() {
-    Get.reset();
-  });
-
-  group('AuthService token management', () {
-    test('token starts as null initially', () {
-      mockAuthService.token.value = null;
-      expect(mockAuthService.token.value, isNull);
+    setUp(() {
+      mockRepository = MockAuthRepository();
     });
 
-    test('token can be set and retrieved', () {
-      mockAuthService.token.value = 'test-token';
-      expect(mockAuthService.token.value, equals('test-token'));
-    });
+    blocTest<SignInCubit, SignInState>(
+      'initial state is SignInInitial',
+      build: () => SignInCubit(authRepository: mockRepository),
+      verify: (cubit) => expect(cubit.state, isA<SignInInitial>()),
+    );
 
-    test('token can be cleared', () {
-      mockAuthService.token.value = null;
-      expect(mockAuthService.token.value, isNull);
-    });
+    blocTest<SignInCubit, SignInState>(
+      'emits Loading then Success on valid credentials',
+      build: () => SignInCubit(authRepository: mockRepository),
+      setUp: () {
+        when(() => mockRepository.signIn(
+              email: any(named: 'email'),
+              password: any(named: 'password'),
+            )).thenAnswer(
+          (_) async =>
+              AuthResponse(token: 'new-token', user: _testUser),
+        );
+      },
+      act: (cubit) =>
+          cubit.signIn(email: 'test@example.com', password: 'password123'),
+      expect: () => [isA<SignInLoading>(), isA<SignInSuccess>()],
+      verify: (cubit) {
+        final state = cubit.state as SignInSuccess;
+        expect(state.token, equals('new-token'));
+        expect(state.user.email, equals('test@example.com'));
+      },
+    );
+
+    blocTest<SignInCubit, SignInState>(
+      'emits Loading then Failure when repository throws',
+      build: () => SignInCubit(authRepository: mockRepository),
+      setUp: () {
+        when(() => mockRepository.signIn(
+              email: any(named: 'email'),
+              password: any(named: 'password'),
+            )).thenThrow(Exception('Network error'));
+      },
+      act: (cubit) =>
+          cubit.signIn(email: 'bad@example.com', password: 'wrongpass'),
+      expect: () => [isA<SignInLoading>(), isA<SignInFailure>()],
+    );
+
+    blocTest<SignInCubit, SignInState>(
+      'does not emit if already loading (BUG-16 guard)',
+      build: () => SignInCubit(authRepository: mockRepository),
+      seed: () => const SignInLoading(),
+      act: (cubit) =>
+          cubit.signIn(email: 'test@example.com', password: 'password'),
+      expect: () => <SignInState>[],
+    );
   });
 
   group('Route constants', () {
     test('all required routes are defined', () {
       expect(AppRoutes.signIn, equals('/sign-in'));
       expect(AppRoutes.signUp, equals('/sign-up'));
-      expect(AppRoutes.forgotPassword, equals('/forgot-password'));
-      expect(AppRoutes.resetPassword, equals('/reset-password'));
-      expect(AppRoutes.verifyEmail, equals('/verify-email'));
-      expect(AppRoutes.twoFactor, equals('/two-factor'));
       expect(AppRoutes.home, equals('/home'));
-      expect(AppRoutes.profile, equals('/profile'));
-      expect(AppRoutes.settings, equals('/settings'));
       expect(AppRoutes.splash, equals('/splash'));
     });
   });

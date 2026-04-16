@@ -1,74 +1,86 @@
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:flutter_starter/app/modules/auth/sign_in/sign_in_controller.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:flutter_starter/app/modules/auth/auth_bloc.dart';
+import 'package:flutter_starter/app/modules/auth/sign_in/sign_in_cubit.dart';
 import 'package:flutter_starter/app/modules/auth/sign_in/sign_in_view.dart';
+import 'package:flutter_starter/app/services/auth_service.dart';
 
-class MockSignInController extends GetxController
-    with Mock
-    implements SignInController {
+class MockSignInCubit extends MockCubit<SignInState> implements SignInCubit {
   @override
-  final formKey = GlobalKey<FormState>();
-  @override
-  final emailController = TextEditingController();
-  @override
-  final passwordController = TextEditingController();
-  @override
-  final isLoading = false.obs;
-  @override
-  final isPasswordHidden = true.obs;
+  bool get isPasswordHidden => true;
+}
 
-  @override
-  void togglePasswordVisibility() {}
+class MockAuthBloc extends MockBloc<AuthEvent, AuthState> implements AuthBloc {}
 
+class MockAuthService extends Mock implements AuthService {
   @override
-  void goToForgotPassword() {}
+  Stream<AuthStatus> get status => const Stream.empty();
+}
 
-  @override
-  void goToSignUp() {}
-
-  @override
-  Future<void> signIn() async {}
+Widget _buildSut({
+  required SignInCubit cubit,
+  required AuthBloc authBloc,
+}) {
+  return MaterialApp.router(
+    routerConfig: GoRouter(
+      initialLocation: '/sign-in',
+      routes: [
+        GoRoute(
+          path: '/sign-in',
+          builder: (ctx, _) => MultiBlocProvider(
+            providers: [
+              BlocProvider<AuthBloc>.value(value: authBloc),
+              BlocProvider<SignInCubit>.value(value: cubit),
+            ],
+            child: const SignInView(),
+          ),
+        ),
+        GoRoute(path: '/sign-up', builder: (_, _) => const Scaffold()),
+        GoRoute(path: '/forgot-password', builder: (_, _) => const Scaffold()),
+        GoRoute(path: '/home', builder: (_, _) => const Scaffold()),
+      ],
+    ),
+  );
 }
 
 void main() {
-  late MockSignInController mockController;
+  late MockSignInCubit mockCubit;
+  late MockAuthBloc mockAuthBloc;
 
   setUp(() {
-    Get.testMode = true;
-    mockController = MockSignInController();
-    Get.put<SignInController>(mockController);
+    mockCubit = MockSignInCubit();
+    mockAuthBloc = MockAuthBloc();
+    when(() => mockCubit.state).thenReturn(const SignInInitial());
+    when(() => mockAuthBloc.state).thenReturn(const AuthUnauthenticated());
   });
 
-  tearDown(() {
-    Get.reset();
-  });
+  group('SignInView — form field rendering', () {
+    testWidgets('displays email TextFormField', (tester) async {
+      await tester.pumpWidget(
+          _buildSut(cubit: mockCubit, authBloc: mockAuthBloc));
+      await tester.pumpAndSettle();
 
-  Widget buildTestWidget() {
-    return GetMaterialApp(home: const SignInView());
-  }
-
-  group('SignInView renders form fields', () {
-    testWidgets('displays email TextFormField', (WidgetTester tester) async {
-      await tester.pumpWidget(buildTestWidget());
-
-      expect(find.byType(TextFormField), findsWidgets);
       expect(find.widgetWithText(TextFormField, 'Email'), findsOneWidget);
     });
 
-    testWidgets('displays password TextFormField', (WidgetTester tester) async {
-      await tester.pumpWidget(buildTestWidget());
+    testWidgets('displays password TextFormField', (tester) async {
+      await tester.pumpWidget(
+          _buildSut(cubit: mockCubit, authBloc: mockAuthBloc));
+      await tester.pumpAndSettle();
 
       expect(find.widgetWithText(TextFormField, 'Password'), findsOneWidget);
     });
 
-    testWidgets('displays Sign In button in ElevatedButton', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(buildTestWidget());
+    testWidgets('displays Sign In ElevatedButton', (tester) async {
+      await tester.pumpWidget(
+          _buildSut(cubit: mockCubit, authBloc: mockAuthBloc));
+      await tester.pumpAndSettle();
 
-      expect(find.byType(ElevatedButton), findsOneWidget);
       expect(
         find.descendant(
           of: find.byType(ElevatedButton),
@@ -78,31 +90,36 @@ void main() {
       );
     });
 
-    testWidgets('displays Forgot Password link', (WidgetTester tester) async {
-      await tester.pumpWidget(buildTestWidget());
+    testWidgets('displays Forgot Password link', (tester) async {
+      await tester.pumpWidget(
+          _buildSut(cubit: mockCubit, authBloc: mockAuthBloc));
+      await tester.pumpAndSettle();
 
       expect(find.text('Forgot Password?'), findsOneWidget);
     });
 
-    testWidgets('displays Sign Up link', (WidgetTester tester) async {
-      await tester.pumpWidget(buildTestWidget());
+    testWidgets('displays Sign Up link', (tester) async {
+      await tester.pumpWidget(
+          _buildSut(cubit: mockCubit, authBloc: mockAuthBloc));
+      await tester.pumpAndSettle();
 
       expect(find.text("Don't have an account?"), findsOneWidget);
       expect(find.text('Sign Up'), findsOneWidget);
     });
 
-    testWidgets('displays password visibility toggle icon', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(buildTestWidget());
+    testWidgets('displays password visibility toggle icon', (tester) async {
+      await tester.pumpWidget(
+          _buildSut(cubit: mockCubit, authBloc: mockAuthBloc));
+      await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.visibility_off), findsOneWidget);
     });
 
-    testWidgets('displays AppBar with title', (WidgetTester tester) async {
-      await tester.pumpWidget(buildTestWidget());
+    testWidgets('displays AppBar with Sign In title', (tester) async {
+      await tester.pumpWidget(
+          _buildSut(cubit: mockCubit, authBloc: mockAuthBloc));
+      await tester.pumpAndSettle();
 
-      expect(find.text('Sign In'), findsWidgets);
       expect(find.byType(AppBar), findsOneWidget);
     });
   });

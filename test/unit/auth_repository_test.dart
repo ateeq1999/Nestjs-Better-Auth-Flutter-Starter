@@ -32,7 +32,7 @@ void main() {
         name: 'Test User',
         image: null,
         emailVerified: true,
-        createdAt: DateTime(2024, 1, 1),
+        createdAt: DateTime(2024),
       );
 
       final authResponse = AuthResponse(token: 'jwt-token-123', user: user);
@@ -61,17 +61,17 @@ void main() {
       expect(user.name, equals('Test User'));
       expect(user.image, equals('https://example.com/avatar.jpg'));
       expect(user.emailVerified, isTrue);
-      expect(user.createdAt, equals(DateTime(2024, 1, 1)));
+      expect(user.createdAt, equals(DateTime(2024)));
     });
 
-    test('toJson creates correct JSON', () {
+    test('toJson serialises all fields', () {
       final user = User(
         id: 'user-123',
         email: 'test@example.com',
         name: 'Test User',
         image: null,
         emailVerified: false,
-        createdAt: DateTime(2024, 1, 1),
+        createdAt: DateTime(2024),
       );
 
       final json = user.toJson();
@@ -90,14 +90,31 @@ void main() {
         name: 'Original Name',
         image: null,
         emailVerified: false,
-        createdAt: DateTime(2024, 1, 1),
+        createdAt: DateTime(2024),
       );
 
-      final updatedUser = user.copyWith(name: 'Updated Name');
+      final updated = user.copyWith(name: 'Updated Name');
 
-      expect(updatedUser.id, equals('user-123'));
-      expect(updatedUser.name, equals('Updated Name'));
-      expect(updatedUser.email, equals('test@example.com'));
+      expect(updated.id, equals('user-123'));
+      expect(updated.name, equals('Updated Name'));
+      expect(updated.email, equals('test@example.com'));
+    });
+
+    test('copyWith preserves fields not specified', () {
+      final user = User(
+        id: 'user-123',
+        email: 'test@example.com',
+        name: 'Name',
+        image: 'https://example.com/img.jpg',
+        emailVerified: true,
+        createdAt: DateTime(2024),
+      );
+
+      final updated = user.copyWith(email: 'new@example.com');
+
+      expect(updated.name, equals('Name'));
+      expect(updated.image, equals('https://example.com/img.jpg'));
+      expect(updated.emailVerified, isTrue);
     });
   });
 }
