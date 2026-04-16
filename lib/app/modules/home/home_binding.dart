@@ -1,9 +1,1 @@
-import 'package:get/get.dart';
-import 'home_controller.dart';
-
-class HomeBinding extends Bindings {
-  @override
-  void dependencies() {
-    Get.lazyPut<HomeController>(() => HomeController());
-  }
-}
+// Removed: replaced by BLoC/Cubit. See adjacent cubit/state files.

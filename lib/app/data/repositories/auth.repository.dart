@@ -1,15 +1,13 @@
 import 'package:dio/dio.dart';
-import 'package:get/get.dart';
+
 import '../models/auth_response.model.dart';
 import '../providers/auth.provider.dart';
 import '../../core/errors/app_exception.dart';
 
-class AuthRepository extends GetxService {
-  late final AuthProvider _provider;
+class AuthRepository {
+  AuthRepository(this._provider);
 
-  AuthRepository() {
-    _provider = Get.put(AuthProvider());
-  }
+  final AuthProvider _provider;
 
   Future<AuthResponse> signIn({
     required String email,
@@ -17,7 +15,7 @@ class AuthRepository extends GetxService {
   }) async {
     try {
       final response = await _provider.signIn(email: email, password: password);
-      return AuthResponse.fromJson(response.data);
+      return AuthResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
@@ -84,10 +82,11 @@ class AuthRepository extends GetxService {
     }
   }
 
-  Future<AuthResponse> refreshToken() async {
+  /// Verifies a TOTP two-factor code against the API (BUG-05 fix).
+  Future<AuthResponse> verifyTwoFactor({required String code}) async {
     try {
-      final response = await _provider.refreshToken();
-      return AuthResponse.fromJson(response.data);
+      final response = await _provider.verifyTwoFactor(code: code);
+      return AuthResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }

@@ -1,9 +1,1 @@
-import 'package:get/get.dart';
-import 'sign_up_controller.dart';
-
-class SignUpBinding extends Bindings {
-  @override
-  void dependencies() {
-    Get.lazyPut<SignUpController>(() => SignUpController());
-  }
-}
+// Removed: replaced by BLoC/Cubit. See adjacent cubit/state files.

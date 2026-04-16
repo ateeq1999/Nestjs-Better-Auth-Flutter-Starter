@@ -1,37 +1,41 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:get/get.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:go_router/go_router.dart';
 
-import '../data/providers/user.provider.dart';
+import '../data/repositories/user.repository.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
 }
 
-class NotificationService extends GetxService {
-  static NotificationService get to => Get.find<NotificationService>();
+class NotificationService {
+  NotificationService({required UserRepository userRepository})
+      : _userRepository = userRepository;
 
+  final UserRepository _userRepository;
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
   final onMessage = StreamController<RemoteMessage>.broadcast();
   StreamSubscription<RemoteMessage>? _onMessageSubscription;
 
-  Future<NotificationService> init() async {
+  /// GoRouter instance — set after the router is created so the notification
+  /// tap handler can navigate without a BuildContext.
+  GoRouter? router;
+
+  Future<void> init() async {
     await _initLocalNotifications();
     await _requestPermission();
     await _setupMessageHandlers();
-    return this;
   }
 
   Future<void> _initLocalNotifications() async {
-    const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
-    );
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -98,14 +102,9 @@ class NotificationService extends GetxService {
   }
 
   void _onMessageOpenedApp(RemoteMessage message) {
-    final data = message.data;
-    if (data.containsKey('screen')) {
-      final screen = data['screen'];
-      if (screen == 'profile') {
-        Get.toNamed('/profile');
-      } else if (screen == 'settings') {
-        Get.toNamed('/settings');
-      }
+    final screen = message.data['screen'] as String?;
+    if (screen != null) {
+      router?.go('/$screen');
     }
   }
 
@@ -113,43 +112,36 @@ class NotificationService extends GetxService {
     try {
       final uri = Uri.parse(payload);
       final screen = uri.queryParameters['screen'];
-      if (screen == 'profile') {
-        Get.toNamed('/profile');
-      } else if (screen == 'settings') {
-        Get.toNamed('/settings');
+      if (screen != null) {
+        router?.go('/$screen');
       }
     } catch (_) {}
   }
 
   Future<void> _onTokenRefresh(String token) async {
     try {
-      await UserProvider().registerDeviceToken(
+      await _userRepository.registerDeviceToken(
         token: token,
         platform: Platform.isAndroid ? 'android' : 'ios',
       );
     } catch (_) {}
   }
 
-  Future<String?> getToken() async {
-    return FirebaseMessaging.instance.getToken();
-  }
+  Future<String?> getToken() => FirebaseMessaging.instance.getToken();
 
   Future<void> registerDeviceToken() async {
     final token = await getToken();
     if (token == null) return;
-
     try {
-      await UserProvider().registerDeviceToken(
+      await _userRepository.registerDeviceToken(
         token: token,
         platform: Platform.isAndroid ? 'android' : 'ios',
       );
     } catch (_) {}
   }
 
-  @override
-  void onClose() {
+  void dispose() {
     _onMessageSubscription?.cancel();
     onMessage.close();
-    super.onClose();
   }
 }

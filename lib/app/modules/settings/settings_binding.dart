@@ -1,9 +1,1 @@
-import 'package:get/get.dart';
-import 'settings_controller.dart';
-
-class SettingsBinding extends Bindings {
-  @override
-  void dependencies() {
-    Get.lazyPut<SettingsController>(() => SettingsController());
-  }
-}
+// Removed: replaced by BLoC/Cubit. See adjacent cubit/state files.

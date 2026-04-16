@@ -1,47 +1,106 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'profile_controller.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class ProfileView extends GetView<ProfileController> {
+import '../../core/utils/snackbar_helper.dart';
+import 'profile_cubit.dart';
+
+class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
-      body: Obx(
-        () => controller.isLoading.value
-            ? const Center(child: CircularProgressIndicator())
-            : Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    GestureDetector(
-                      onTap: controller.pickAndUploadAvatar,
-                      child: const CircleAvatar(
-                        radius: 50,
-                        child: Icon(Icons.person, size: 50),
+    return BlocConsumer<ProfileCubit, ProfileState>(
+      listener: (context, state) {
+        if (state is ProfileFailure) {
+          SnackbarHelper.showError(context, state.message);
+        }
+        if (state is ProfileLoaded) {
+          // Dismiss any transient success messages here if needed.
+        }
+      },
+      builder: (context, state) {
+        final cubit = context.read<ProfileCubit>();
+        final isLoading = state is ProfileLoading;
+        final user = state is ProfileLoaded ? state.user : null;
+
+        return Scaffold(
+          appBar: AppBar(title: const Text('Profile')),
+          body: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      // BUG-06 fix: display actual avatar image when available.
+                      GestureDetector(
+                        onTap: cubit.pickAndUploadAvatar,
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundImage: user?.image != null
+                              ? CachedNetworkImageProvider(user!.image!)
+                              : null,
+                          child: user?.image == null
+                              ? const Icon(Icons.person, size: 50)
+                              : null,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: controller.pickAndUploadAvatar,
-                      child: const Text('Change Avatar'),
-                    ),
-                    const SizedBox(height: 24),
-                    ListTile(
-                      title: const Text('Name'),
-                      subtitle: Text(controller.userName),
-                      trailing: const Icon(Icons.edit),
-                      onTap: controller.showEditNameDialog,
-                    ),
-                    ListTile(
-                      title: const Text('Email'),
-                      subtitle: Text(controller.userEmail),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: cubit.pickAndUploadAvatar,
+                        child: const Text('Change Avatar'),
+                      ),
+                      const SizedBox(height: 24),
+                      ListTile(
+                        title: const Text('Name'),
+                        subtitle: Text(user?.name ?? ''),
+                        trailing: const Icon(Icons.edit),
+                        onTap: () => _showEditNameDialog(context, cubit,
+                            user?.name ?? ''),
+                      ),
+                      ListTile(
+                        title: const Text('Email'),
+                        subtitle: Text(user?.email ?? ''),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+        );
+      },
+    );
+  }
+
+  void _showEditNameDialog(
+      BuildContext context, ProfileCubit cubit, String currentName) {
+    final textController = TextEditingController(text: currentName);
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit Name'),
+        content: TextFormField(
+          controller: textController,
+          decoration: const InputDecoration(labelText: 'Name'),
+          // BUG-13 fix: validate non-empty
+          validator: (v) =>
+              (v == null || v.trim().isEmpty) ? 'Name cannot be empty' : null,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = textController.text.trim();
+              if (name.isNotEmpty) {
+                Navigator.of(dialogContext).pop();
+                cubit.updateName(name);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }

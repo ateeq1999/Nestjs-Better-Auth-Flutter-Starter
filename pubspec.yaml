@@ -1,5 +1,5 @@
 name: flutter_starter
-description: "Cross-platform mobile app using Flutter + GetX with NestJS Better-Auth API"
+description: "Cross-platform mobile app using Flutter + flutter_bloc with NestJS Better-Auth API"
 publish_to: "none"
 version: 1.0.0+1
 
@@ -12,8 +12,14 @@ dependencies:
 
   cupertino_icons: ^1.0.8
 
-  # State / DI / Navigation
-  get: ^4.7.3
+  # State Management
+  flutter_bloc: ^9.1.1
+  bloc: ^9.0.0
+  equatable: ^2.0.7
+  hydrated_bloc: ^10.0.0
+
+  # Navigation
+  go_router: ^15.1.2
 
   # HTTP
   dio: ^5.9.2
@@ -21,7 +27,7 @@ dependencies:
 
   # Storage
   flutter_secure_storage: ^10.0.0
-  get_storage: ^2.1.1
+  shared_preferences: ^2.5.3
 
   # Environment
   flutter_dotenv: ^6.0.0
@@ -45,6 +51,7 @@ dependencies:
   # Utils
   intl: ^0.20.2
   flutter_local_notifications: ^18.0.1
+  path_provider: ^2.1.5
 
   # Annotations
   freezed_annotation: ^3.1.0
@@ -63,6 +70,7 @@ dev_dependencies:
 
   # Testing
   mocktail: ^1.0.5
+  bloc_test: ^10.0.0
   integration_test:
     sdk: flutter
 

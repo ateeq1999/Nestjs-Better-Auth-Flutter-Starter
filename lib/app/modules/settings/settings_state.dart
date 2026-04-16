@@ -1,0 +1,26 @@
+part of 'settings_cubit.dart';
+
+sealed class SettingsState {
+  const SettingsState();
+}
+
+final class SettingsInitial extends SettingsState {
+  const SettingsInitial({this.isDarkMode = false});
+  final bool isDarkMode;
+}
+
+final class SettingsLoading extends SettingsState {
+  const SettingsLoading({required this.isDarkMode});
+  final bool isDarkMode;
+}
+
+final class SettingsPasswordChanged extends SettingsState {
+  const SettingsPasswordChanged({required this.isDarkMode});
+  final bool isDarkMode;
+}
+
+final class SettingsFailure extends SettingsState {
+  const SettingsFailure(this.message, {required this.isDarkMode});
+  final String message;
+  final bool isDarkMode;
+}

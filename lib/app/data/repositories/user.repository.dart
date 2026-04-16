@@ -1,20 +1,18 @@
 import 'package:dio/dio.dart';
-import 'package:get/get.dart';
+
 import '../models/user.model.dart';
 import '../providers/user.provider.dart';
 import '../../core/errors/app_exception.dart';
 
-class UserRepository extends GetxService {
-  late final UserProvider _provider;
+class UserRepository {
+  UserRepository(this._provider);
 
-  UserRepository() {
-    _provider = Get.put(UserProvider());
-  }
+  final UserProvider _provider;
 
   Future<User> getMe() async {
     try {
       final response = await _provider.getMe();
-      return User.fromJson(response.data);
+      return User.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
@@ -23,7 +21,7 @@ class UserRepository extends GetxService {
   Future<User> updateProfile({String? name, String? email}) async {
     try {
       final response = await _provider.updateProfile(name: name, email: email);
-      return User.fromJson(response.data);
+      return User.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
@@ -32,7 +30,7 @@ class UserRepository extends GetxService {
   Future<User> uploadAvatar(String filePath) async {
     try {
       final response = await _provider.uploadAvatar(filePath);
-      return User.fromJson(response.data);
+      return User.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
