@@ -32,6 +32,8 @@ class SettingsCubit extends Cubit<SettingsState> {
       SettingsLoading(:final isDarkMode) => isDarkMode,
       SettingsPasswordChanged(:final isDarkMode) => isDarkMode,
       SettingsFailure(:final isDarkMode) => isDarkMode,
+      SettingsTwoFactorEnabled(:final isDarkMode) => isDarkMode,
+      SettingsTwoFactorDisabled(:final isDarkMode) => isDarkMode,
     };
   }
 
@@ -69,6 +71,30 @@ class SettingsCubit extends Cubit<SettingsState> {
     } finally {
       await _authService.signOut(); // BUG-08 fix: uses AppRoutes via AuthBloc
       _authBloc.add(const AuthSignedOut());
+    }
+  }
+
+  Future<void> enableTwoFactor() async {
+    emit(SettingsLoading(isDarkMode: isDarkMode));
+    try {
+      final totpUri = await _authRepository.enableTwoFactor();
+      emit(SettingsTwoFactorEnabled(isDarkMode: isDarkMode, totpUri: totpUri));
+    } on ApiException catch (e) {
+      emit(SettingsFailure(e.message, isDarkMode: isDarkMode));
+    } catch (e) {
+      emit(SettingsFailure(e.toString(), isDarkMode: isDarkMode));
+    }
+  }
+
+  Future<void> disableTwoFactor({required String code}) async {
+    emit(SettingsLoading(isDarkMode: isDarkMode));
+    try {
+      await _authRepository.disableTwoFactor(code: code);
+      emit(SettingsTwoFactorDisabled(isDarkMode: isDarkMode));
+    } on ApiException catch (e) {
+      emit(SettingsFailure(e.message, isDarkMode: isDarkMode));
+    } catch (e) {
+      emit(SettingsFailure(e.toString(), isDarkMode: isDarkMode));
     }
   }
 

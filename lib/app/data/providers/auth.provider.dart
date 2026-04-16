@@ -57,4 +57,10 @@ class AuthProvider {
 
   Future<Response<dynamic>> refreshToken() =>
       _dio.post('/api/auth/token/refresh');
+
+  Future<Response<dynamic>> enableTwoFactor() =>
+      _dio.post('/api/auth/two-factor/enable');
+
+  Future<Response<dynamic>> disableTwoFactor({required String code}) =>
+      _dio.post('/api/auth/two-factor/disable', data: {'code': code});
 }

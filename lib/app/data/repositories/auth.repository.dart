@@ -91,4 +91,23 @@ class AuthRepository {
       throw ApiException.fromDioError(e);
     }
   }
+
+  /// Returns the TOTP URI (otpauth://...) to render a QR code for 2FA setup.
+  Future<String> enableTwoFactor() async {
+    try {
+      final response = await _provider.enableTwoFactor();
+      final data = response.data as Map<String, dynamic>;
+      return data['totpUri'] as String;
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<void> disableTwoFactor({required String code}) async {
+    try {
+      await _provider.disableTwoFactor(code: code);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }

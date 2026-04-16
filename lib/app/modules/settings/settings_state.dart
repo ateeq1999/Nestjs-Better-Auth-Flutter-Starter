@@ -24,3 +24,14 @@ final class SettingsFailure extends SettingsState {
   final String message;
   final bool isDarkMode;
 }
+
+final class SettingsTwoFactorEnabled extends SettingsState {
+  const SettingsTwoFactorEnabled({required this.isDarkMode, required this.totpUri});
+  final bool isDarkMode;
+  final String totpUri;
+}
+
+final class SettingsTwoFactorDisabled extends SettingsState {
+  const SettingsTwoFactorDisabled({required this.isDarkMode});
+  final bool isDarkMode;
+}

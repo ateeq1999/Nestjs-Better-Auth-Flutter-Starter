@@ -14,6 +14,11 @@ class SettingsView extends StatelessWidget {
         if (state is SettingsPasswordChanged) {
           SnackbarHelper.showSuccess(context, 'Password changed successfully');
           context.read<SettingsCubit>().resetToInitial();
+        } else if (state is SettingsTwoFactorEnabled) {
+          _showTwoFactorQrDialog(context, state.totpUri);
+        } else if (state is SettingsTwoFactorDisabled) {
+          SnackbarHelper.showSuccess(context, 'Two-factor authentication disabled');
+          context.read<SettingsCubit>().resetToInitial();
         } else if (state is SettingsFailure) {
           SnackbarHelper.showError(context, state.message);
           context.read<SettingsCubit>().resetToInitial();
@@ -36,6 +41,18 @@ class SettingsView extends StatelessWidget {
                       onTap: () =>
                           _showChangePasswordDialog(context, cubit),
                     ),
+                    ListTile(
+                      leading: const Icon(Icons.security),
+                      title: const Text('Enable Two-Factor Auth'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: cubit.enableTwoFactor,
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.no_encryption_outlined, color: Colors.orange),
+                      title: const Text('Disable Two-Factor Auth'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => _showDisableTwoFactorDialog(context, cubit),
+                    ),
                     SwitchListTile(
                       secondary: const Icon(Icons.dark_mode),
                       title: const Text('Dark Mode'),
@@ -52,6 +69,70 @@ class SettingsView extends StatelessWidget {
                 ),
         );
       },
+    );
+  }
+
+  void _showTwoFactorQrDialog(BuildContext context, String totpUri) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Enable Two-Factor Authentication'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Scan this URI with your authenticator app, then confirm with your 6-digit code.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            SelectableText(
+              totpUri,
+              style: const TextStyle(fontSize: 11),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              context.read<SettingsCubit>().resetToInitial();
+            },
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDisableTwoFactorDialog(BuildContext context, SettingsCubit cubit) {
+    final codeController = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Disable Two-Factor Authentication'),
+        content: TextField(
+          controller: codeController,
+          keyboardType: TextInputType.number,
+          maxLength: 6,
+          decoration: const InputDecoration(
+            labelText: '6-digit TOTP code',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              cubit.disableTwoFactor(code: codeController.text.trim());
+            },
+            child: const Text('Disable'),
+          ),
+        ],
+      ),
     );
   }
 
