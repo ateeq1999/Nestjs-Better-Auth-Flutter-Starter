@@ -4,7 +4,6 @@ import 'package:get_storage/get_storage.dart';
 import '../../services/auth_service.dart';
 import '../../data/repositories/auth.repository.dart';
 import '../../core/utils/snackbar_helper.dart';
-import '../../routes/app_routes.dart';
 
 class SettingsController extends GetxController {
   AuthService get _authService => Get.find<AuthService>();

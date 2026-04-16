@@ -44,6 +44,7 @@ dependencies:
 
   # Utils
   intl: ^0.20.2
+  flutter_local_notifications: ^18.0.1
 
   # Annotations
   freezed_annotation: ^3.1.0
@@ -62,6 +63,8 @@ dev_dependencies:
 
   # Testing
   mocktail: ^1.0.5
+  integration_test:
+    sdk: flutter
 
 flutter:
   uses-material-design: true
