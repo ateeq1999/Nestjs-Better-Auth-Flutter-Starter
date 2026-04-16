@@ -15,8 +15,12 @@ import 'firebase_options.dart';
 import 'app/core/router/app_router.dart';
 import 'app/data/providers/auth.provider.dart';
 import 'app/data/providers/user.provider.dart';
+import 'app/data/providers/admin.provider.dart';
+import 'app/data/providers/organization.provider.dart';
 import 'app/data/repositories/auth.repository.dart';
 import 'app/data/repositories/user.repository.dart';
+import 'app/data/repositories/admin.repository.dart';
+import 'app/data/repositories/organization.repository.dart';
 import 'app/modules/auth/auth_bloc.dart';
 import 'app/routes/app_routes.dart';
 import 'app/services/auth_service.dart';
@@ -45,8 +49,12 @@ Future<void> main() async {
   final dioService = DioService(authService);
   final authProvider = AuthProvider(dioService.dio);
   final userProvider = UserProvider(dioService.dio);
+  final adminProvider = AdminProvider(dioService.dio);
+  final orgProvider = OrganizationProvider(dioService.dio);
   final authRepository = AuthRepository(authProvider);
   final userRepository = UserRepository(userProvider);
+  final adminRepository = AdminRepository(adminProvider);
+  final orgRepository = OrganizationRepository(orgProvider);
   final notificationService = NotificationService(userRepository: userRepository);
 
   await notificationService.init();
@@ -56,6 +64,8 @@ Future<void> main() async {
       authService: authService,
       authRepository: authRepository,
       userRepository: userRepository,
+      adminRepository: adminRepository,
+      orgRepository: orgRepository,
       notificationService: notificationService,
       prefs: prefs,
     ),
@@ -68,6 +78,8 @@ class MyApp extends StatefulWidget {
     required this.authService,
     required this.authRepository,
     required this.userRepository,
+    required this.adminRepository,
+    required this.orgRepository,
     required this.notificationService,
     required this.prefs,
   });
@@ -75,6 +87,8 @@ class MyApp extends StatefulWidget {
   final AuthService authService;
   final AuthRepository authRepository;
   final UserRepository userRepository;
+  final AdminRepository adminRepository;
+  final OrganizationRepository orgRepository;
   final NotificationService notificationService;
   final SharedPreferences prefs;
 
@@ -156,6 +170,8 @@ class _MyAppState extends State<MyApp> {
         RepositoryProvider<AuthService>.value(value: widget.authService),
         RepositoryProvider<AuthRepository>.value(value: widget.authRepository),
         RepositoryProvider<UserRepository>.value(value: widget.userRepository),
+        RepositoryProvider<AdminRepository>.value(value: widget.adminRepository),
+        RepositoryProvider<OrganizationRepository>.value(value: widget.orgRepository),
       ],
       child: BlocProvider<AuthBloc>.value(
         value: _authBloc,

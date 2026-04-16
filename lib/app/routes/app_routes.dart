@@ -10,4 +10,15 @@ abstract class AppRoutes {
   static const home = '/home';
   static const profile = '/profile';
   static const settings = '/settings';
+
+  // Admin
+  static const admin = '/admin';
+  static const adminUsers = '/admin/users';
+  static const adminAuditLogs = '/admin/audit-logs';
+  static String adminUserDetail(String id) => '/admin/users/$id';
+
+  // Organizations
+  static const organizations = '/organizations';
+  static String orgDetail(String id) => '/organizations/$id';
+  static String orgInvite(String id) => '/organizations/$id/invite';
 }
