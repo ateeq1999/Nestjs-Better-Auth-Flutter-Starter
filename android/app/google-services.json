@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "790417579721",
+    "project_id": "nestjs-better-auth-flutter",
+    "storage_bucket": "nestjs-better-auth-flutter.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:790417579721:android:249e055b8b42dce98cb718",
+        "android_client_info": {
+          "package_name": "com.example.flutter_starter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA2lHK5NYTXkJsCXDXAgoyLrUzVzWY7y-Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
