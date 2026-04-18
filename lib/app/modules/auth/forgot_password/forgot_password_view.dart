@@ -36,11 +36,16 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
               context, 'Password reset link sent to your email.');
           context.go(AppRoutes.signIn);
         } else if (state is ForgotPasswordFailure) {
-          SnackbarHelper.showError(context, state.message);
+          final hasFieldErrors = state.fieldErrors?.isNotEmpty ?? false;
+          if (!hasFieldErrors) {
+            SnackbarHelper.showError(context, state.message);
+          }
         }
       },
       builder: (context, state) {
         final isLoading = state is ForgotPasswordLoading;
+        final fieldErrors =
+            state is ForgotPasswordFailure ? state.fieldErrors : null;
 
         return Scaffold(
           appBar: AppBar(title: const Text('Forgot Password')),
@@ -69,6 +74,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    forceErrorText: fieldErrors?['email'],
                     decoration: const InputDecoration(
                       labelText: 'Email',
                       border: OutlineInputBorder(),

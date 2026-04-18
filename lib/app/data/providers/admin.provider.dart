@@ -11,17 +11,22 @@ class AdminProvider {
     String? search,
     String? role,
     bool? verified,
+    CancelToken? cancelToken,
   }) {
     final params = <String, dynamic>{'limit': limit};
     if (cursor != null) params['cursor'] = cursor;
     if (search != null && search.isNotEmpty) params['search'] = search;
     if (role != null) params['role'] = role;
     if (verified != null) params['verified'] = verified;
-    return _dio.get('/v1/api/admin/users', queryParameters: params);
+    return _dio.get(
+      '/v1/api/admin/users',
+      queryParameters: params,
+      cancelToken: cancelToken,
+    );
   }
 
-  Future<Response<dynamic>> getStats() =>
-      _dio.get('/v1/api/admin/users/stats');
+  Future<Response<dynamic>> getStats({CancelToken? cancelToken}) =>
+      _dio.get('/v1/api/admin/users/stats', cancelToken: cancelToken);
 
   Future<Response<dynamic>> getUser(String id) =>
       _dio.get('/v1/api/admin/users/$id');
@@ -36,10 +41,15 @@ class AdminProvider {
     String? userId,
     int limit = 20,
     String? cursor,
+    CancelToken? cancelToken,
   }) {
     final params = <String, dynamic>{'limit': limit};
     if (userId != null) params['userId'] = userId;
     if (cursor != null) params['cursor'] = cursor;
-    return _dio.get('/v1/api/admin/audit-logs', queryParameters: params);
+    return _dio.get(
+      '/v1/api/admin/audit-logs',
+      queryParameters: params,
+      cancelToken: cancelToken,
+    );
   }
 }

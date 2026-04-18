@@ -42,12 +42,17 @@ class _SignUpViewState extends State<SignUpView> {
               context, 'Account created! Please check your email.');
           context.go(AppRoutes.signIn);
         } else if (state is SignUpFailure) {
-          SnackbarHelper.showError(context, state.message);
+          final hasFieldErrors = state.fieldErrors?.isNotEmpty ?? false;
+          if (!hasFieldErrors) {
+            SnackbarHelper.showError(context, state.message);
+          }
         }
       },
       builder: (context, state) {
         final cubit = context.read<SignUpCubit>();
         final isLoading = state is SignUpLoading;
+        final fieldErrors =
+            state is SignUpFailure ? state.fieldErrors : null;
 
         return Scaffold(
           appBar: AppBar(title: const Text('Sign Up')),
@@ -62,6 +67,7 @@ class _SignUpViewState extends State<SignUpView> {
                   TextFormField(
                     controller: _nameController,
                     textCapitalization: TextCapitalization.words,
+                    forceErrorText: fieldErrors?['name'],
                     decoration: const InputDecoration(
                       labelText: 'Full Name',
                       border: OutlineInputBorder(),
@@ -76,6 +82,7 @@ class _SignUpViewState extends State<SignUpView> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    forceErrorText: fieldErrors?['email'],
                     decoration: const InputDecoration(
                       labelText: 'Email',
                       border: OutlineInputBorder(),
@@ -92,6 +99,7 @@ class _SignUpViewState extends State<SignUpView> {
                     builder: (context, _) => TextFormField(
                       controller: _passwordController,
                       obscureText: cubit.isPasswordHidden,
+                      forceErrorText: fieldErrors?['password'],
                       decoration: InputDecoration(
                         labelText: 'Password',
                         border: const OutlineInputBorder(),

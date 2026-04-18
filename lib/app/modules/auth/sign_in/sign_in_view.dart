@@ -51,13 +51,18 @@ class _SignInViewState extends State<SignInView> {
             );
           }
         } else if (state is SignInFailure) {
-          SnackbarHelper.showError(context, state.message);
+          final hasFieldErrors = state.fieldErrors?.isNotEmpty ?? false;
+          if (!hasFieldErrors) {
+            SnackbarHelper.showError(context, state.message);
+          }
         }
       },
       builder: (context, state) {
         final cubit = context.read<SignInCubit>();
         final isLoading = state is SignInLoading;
         final flags = context.read<FeatureFlags>();
+        final fieldErrors =
+            state is SignInFailure ? state.fieldErrors : null;
 
         return Scaffold(
           appBar: AppBar(title: const Text('Sign In')),
@@ -72,6 +77,7 @@ class _SignInViewState extends State<SignInView> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    forceErrorText: fieldErrors?['email'],
                     decoration: const InputDecoration(
                       labelText: 'Email',
                       border: OutlineInputBorder(),
@@ -89,6 +95,7 @@ class _SignInViewState extends State<SignInView> {
                     builder: (context, _) => TextFormField(
                       controller: _passwordController,
                       obscureText: cubit.isPasswordHidden,
+                      forceErrorText: fieldErrors?['password'],
                       decoration: InputDecoration(
                         labelText: 'Password',
                         border: const OutlineInputBorder(),

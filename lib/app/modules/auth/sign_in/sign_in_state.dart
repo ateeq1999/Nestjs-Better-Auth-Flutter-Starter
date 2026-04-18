@@ -25,6 +25,7 @@ final class SignInTwoFactorRequired extends SignInState {
 }
 
 final class SignInFailure extends SignInState {
-  const SignInFailure(this.message);
+  const SignInFailure(this.message, {this.fieldErrors});
   final String message;
+  final Map<String, String>? fieldErrors;
 }

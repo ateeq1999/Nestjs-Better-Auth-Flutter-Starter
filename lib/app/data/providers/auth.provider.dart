@@ -31,10 +31,6 @@ class AuthProvider {
   Future<Response<dynamic>> signOut() =>
       _dio.post('/v1/api/auth/sign-out');
 
-  // BUG-U7: was /api/auth/session
-  Future<Response<dynamic>> getSession() =>
-      _dio.get('/v1/api/auth/session');
-
   // BUG-U3: was /api/auth/forgot-password (wrong spelling too)
   Future<Response<dynamic>> forgotPassword({required String email}) =>
       _dio.post('/v1/api/auth/forget-password', data: {'email': email});

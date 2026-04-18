@@ -34,12 +34,17 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           SnackbarHelper.showSuccess(context, 'Password reset successful!');
           context.go(AppRoutes.signIn);
         } else if (state is ResetPasswordFailure) {
-          SnackbarHelper.showError(context, state.message);
+          final hasFieldErrors = state.fieldErrors?.isNotEmpty ?? false;
+          if (!hasFieldErrors) {
+            SnackbarHelper.showError(context, state.message);
+          }
         }
       },
       builder: (context, state) {
         final cubit = context.read<ResetPasswordCubit>();
         final isLoading = state is ResetPasswordLoading;
+        final fieldErrors =
+            state is ResetPasswordFailure ? state.fieldErrors : null;
 
         return Scaffold(
           appBar: AppBar(title: const Text('Reset Password')),
@@ -69,6 +74,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                     builder: (context, _) => TextFormField(
                       controller: _passwordController,
                       obscureText: cubit.isPasswordHidden,
+                      forceErrorText: fieldErrors?['password'],
                       decoration: InputDecoration(
                         labelText: 'New Password',
                         border: const OutlineInputBorder(),

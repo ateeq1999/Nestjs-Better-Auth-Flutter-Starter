@@ -30,7 +30,7 @@ class ResetPasswordCubit extends Cubit<ResetPasswordState> {
       );
       emit(const ResetPasswordSuccess());
     } on ApiException catch (e) {
-      emit(ResetPasswordFailure(e.message));
+      emit(ResetPasswordFailure(e.message, fieldErrors: e.fieldErrors));
     } catch (e) {
       emit(ResetPasswordFailure(e.toString()));
     }

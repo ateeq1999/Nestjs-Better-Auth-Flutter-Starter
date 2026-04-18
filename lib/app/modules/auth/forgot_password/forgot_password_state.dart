@@ -17,6 +17,7 @@ final class ForgotPasswordSuccess extends ForgotPasswordState {
 }
 
 final class ForgotPasswordFailure extends ForgotPasswordState {
-  const ForgotPasswordFailure(this.message);
+  const ForgotPasswordFailure(this.message, {this.fieldErrors});
   final String message;
+  final Map<String, String>? fieldErrors;
 }

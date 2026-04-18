@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:flutter_starter/app/core/config/feature_flags.dart';
 import 'package:flutter_starter/app/modules/auth/auth_bloc.dart';
 import 'package:flutter_starter/app/modules/auth/sign_in/sign_in_cubit.dart';
 import 'package:flutter_starter/app/modules/auth/sign_in/sign_in_view.dart';
@@ -22,28 +23,45 @@ class MockAuthService extends Mock implements AuthService {
   Stream<AuthStatus> get status => const Stream.empty();
 }
 
+const _testFlags = FeatureFlags(
+  magicLink: true,
+  twoFactor: true,
+  organizations: true,
+  admin: true,
+  signUp: true,
+  oauth: false,
+  notifications: true,
+  themeCustomization: true,
+  deleteAccount: false,
+);
+
 Widget _buildSut({
   required SignInCubit cubit,
   required AuthBloc authBloc,
+  FeatureFlags flags = _testFlags,
 }) {
-  return MaterialApp.router(
-    routerConfig: GoRouter(
-      initialLocation: '/sign-in',
-      routes: [
-        GoRoute(
-          path: '/sign-in',
-          builder: (ctx, _) => MultiBlocProvider(
-            providers: [
-              BlocProvider<AuthBloc>.value(value: authBloc),
-              BlocProvider<SignInCubit>.value(value: cubit),
-            ],
-            child: const SignInView(),
+  return RepositoryProvider<FeatureFlags>.value(
+    value: flags,
+    child: MaterialApp.router(
+      routerConfig: GoRouter(
+        initialLocation: '/sign-in',
+        routes: [
+          GoRoute(
+            path: '/sign-in',
+            builder: (ctx, _) => MultiBlocProvider(
+              providers: [
+                BlocProvider<AuthBloc>.value(value: authBloc),
+                BlocProvider<SignInCubit>.value(value: cubit),
+              ],
+              child: const SignInView(),
+            ),
           ),
-        ),
-        GoRoute(path: '/sign-up', builder: (_, _) => const Scaffold()),
-        GoRoute(path: '/forgot-password', builder: (_, _) => const Scaffold()),
-        GoRoute(path: '/home', builder: (_, _) => const Scaffold()),
-      ],
+          GoRoute(path: '/sign-up', builder: (_, _) => const Scaffold()),
+          GoRoute(
+              path: '/forgot-password', builder: (_, _) => const Scaffold()),
+          GoRoute(path: '/home', builder: (_, _) => const Scaffold()),
+        ],
+      ),
     ),
   );
 }

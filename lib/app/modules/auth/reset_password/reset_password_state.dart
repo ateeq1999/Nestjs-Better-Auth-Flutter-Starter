@@ -17,6 +17,7 @@ final class ResetPasswordSuccess extends ResetPasswordState {
 }
 
 final class ResetPasswordFailure extends ResetPasswordState {
-  const ResetPasswordFailure(this.message);
+  const ResetPasswordFailure(this.message, {this.fieldErrors});
   final String message;
+  final Map<String, String>? fieldErrors;
 }

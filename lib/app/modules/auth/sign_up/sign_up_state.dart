@@ -17,6 +17,7 @@ final class SignUpSuccess extends SignUpState {
 }
 
 final class SignUpFailure extends SignUpState {
-  const SignUpFailure(this.message);
+  const SignUpFailure(this.message, {this.fieldErrors});
   final String message;
+  final Map<String, String>? fieldErrors;
 }

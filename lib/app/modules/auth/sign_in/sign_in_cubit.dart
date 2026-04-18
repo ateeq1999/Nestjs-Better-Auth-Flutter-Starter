@@ -37,7 +37,7 @@ class SignInCubit extends Cubit<SignInState> {
       }
       emit(SignInSuccess(token: response.token, user: response.user));
     } on ApiException catch (e) {
-      emit(SignInFailure(e.message)); // BUG-10 fix: use typed message
+      emit(SignInFailure(e.message, fieldErrors: e.fieldErrors));
     } catch (e) {
       emit(SignInFailure(e.toString()));
     }

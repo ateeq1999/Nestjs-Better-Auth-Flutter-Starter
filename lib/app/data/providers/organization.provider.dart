@@ -8,7 +8,8 @@ class OrganizationProvider {
   Options _orgHeaders(String orgId) =>
       Options(headers: {'X-Organization-Id': orgId});
 
-  Future<Response<dynamic>> listOrgs() => _dio.get('/v1/api/organizations');
+  Future<Response<dynamic>> listOrgs({CancelToken? cancelToken}) =>
+      _dio.get('/v1/api/organizations', cancelToken: cancelToken);
 
   Future<Response<dynamic>> createOrg(String name) =>
       _dio.post('/v1/api/organizations', data: {'name': name});
@@ -24,9 +25,10 @@ class OrganizationProvider {
   Future<Response<dynamic>> deleteOrg(String id) =>
       _dio.delete('/v1/api/organizations/$id', options: _orgHeaders(id));
 
-  Future<Response<dynamic>> listMembers(String orgId) =>
+  Future<Response<dynamic>> listMembers(String orgId,
+          {CancelToken? cancelToken}) =>
       _dio.get('/v1/api/organizations/$orgId/members',
-          options: _orgHeaders(orgId));
+          options: _orgHeaders(orgId), cancelToken: cancelToken);
 
   Future<Response<dynamic>> addMember(
           String orgId, String userId, String role) =>

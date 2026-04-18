@@ -35,7 +35,7 @@ class SignUpCubit extends Cubit<SignUpState> {
       );
       emit(const SignUpSuccess());
     } on ApiException catch (e) {
-      emit(SignUpFailure(e.message));
+      emit(SignUpFailure(e.message, fieldErrors: e.fieldErrors));
     } catch (e) {
       emit(SignUpFailure(e.toString()));
     }

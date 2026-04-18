@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/models/organization.model.dart';
@@ -12,18 +13,29 @@ class OrgListCubit extends Cubit<OrgListState> {
         super(const OrgListInitial());
 
   final OrganizationRepository _orgRepository;
+  CancelToken? _cancelToken;
 
   Future<void> loadOrgs() async {
     if (state is OrgListLoading) return;
     emit(const OrgListLoading());
+    _cancelToken?.cancel('Superseded by a newer request');
+    final token = _cancelToken = CancelToken();
     try {
-      final orgs = await _orgRepository.listOrgs();
+      final orgs = await _orgRepository.listOrgs(cancelToken: token);
       emit(OrgListLoaded(orgs));
     } on ApiException catch (e) {
+      if (token.isCancelled) return;
       emit(OrgListFailure(e.message));
     } catch (e) {
+      if (token.isCancelled) return;
       emit(OrgListFailure(e.toString()));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _cancelToken?.cancel('Cubit closed');
+    return super.close();
   }
 
   Future<void> createOrg(String name) async {

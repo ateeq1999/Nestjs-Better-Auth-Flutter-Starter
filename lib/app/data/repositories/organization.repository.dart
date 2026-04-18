@@ -12,9 +12,9 @@ class OrganizationRepository {
 
   final OrganizationProvider _provider;
 
-  Future<List<Organization>> listOrgs() async {
+  Future<List<Organization>> listOrgs({CancelToken? cancelToken}) async {
     try {
-      final response = await _provider.listOrgs();
+      final response = await _provider.listOrgs(cancelToken: cancelToken);
       return unwrapEnvelopeList(response.data)
           .map(Organization.fromJson)
           .toList();
@@ -58,9 +58,11 @@ class OrganizationRepository {
     }
   }
 
-  Future<List<OrgMember>> listMembers(String orgId) async {
+  Future<List<OrgMember>> listMembers(String orgId,
+      {CancelToken? cancelToken}) async {
     try {
-      final response = await _provider.listMembers(orgId);
+      final response =
+          await _provider.listMembers(orgId, cancelToken: cancelToken);
       return unwrapEnvelopeList(response.data)
           .map(OrgMember.fromJson)
           .toList();

@@ -19,7 +19,7 @@ class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
       await _authRepository.forgotPassword(email: email.trim());
       emit(const ForgotPasswordSuccess());
     } on ApiException catch (e) {
-      emit(ForgotPasswordFailure(e.message));
+      emit(ForgotPasswordFailure(e.message, fieldErrors: e.fieldErrors));
     } catch (e) {
       emit(ForgotPasswordFailure(e.toString()));
     }

@@ -18,6 +18,7 @@ class AdminRepository {
     String? search,
     String? role,
     bool? verified,
+    CancelToken? cancelToken,
   }) async {
     try {
       final response = await _provider.listUsers(
@@ -26,26 +27,27 @@ class AdminRepository {
         search: search,
         role: role,
         verified: verified,
+        cancelToken: cancelToken,
       );
       final data = response.data as Map<String, dynamic>;
       final items = (data['data'] as List? ?? [])
           .cast<Map<String, dynamic>>()
           .map(AdminUser.fromJson)
           .toList();
-      final meta = data['meta'] as Map<String, dynamic>? ?? {};
+      final pagination = _pagination(data);
       return (
         users: items,
-        cursor: meta['cursor'] as String?,
-        hasMore: meta['hasMore'] as bool? ?? false,
+        cursor: pagination.cursor,
+        hasMore: pagination.hasMore,
       );
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
   }
 
-  Future<AdminStats> getStats() async {
+  Future<AdminStats> getStats({CancelToken? cancelToken}) async {
     try {
-      final response = await _provider.getStats();
+      final response = await _provider.getStats(cancelToken: cancelToken);
       return AdminStats.fromJson(
           unwrapEnvelope(response.data));
     } on DioException catch (e) {
@@ -83,26 +85,41 @@ class AdminRepository {
     String? userId,
     int limit = 20,
     String? cursor,
+    CancelToken? cancelToken,
   }) async {
     try {
       final response = await _provider.listAuditLogs(
         userId: userId,
         limit: limit,
         cursor: cursor,
+        cancelToken: cancelToken,
       );
       final data = response.data as Map<String, dynamic>;
       final items = (data['data'] as List? ?? [])
           .cast<Map<String, dynamic>>()
           .map(AuditLog.fromJson)
           .toList();
-      final meta = data['meta'] as Map<String, dynamic>? ?? {};
+      final pagination = _pagination(data);
       return (
         logs: items,
-        cursor: meta['cursor'] as String?,
-        hasMore: meta['hasMore'] as bool? ?? false,
+        cursor: pagination.cursor,
+        hasMore: pagination.hasMore,
       );
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
+  }
+
+  /// Envelope `meta.pagination` shape:
+  /// `{ limit, hasNextPage, nextCursor }`.
+  /// BUG: previously read `meta.cursor` / `meta.hasMore` which never existed.
+  static ({String? cursor, bool hasMore}) _pagination(
+      Map<String, dynamic> envelope) {
+    final meta = envelope['meta'] as Map<String, dynamic>? ?? const {};
+    final p = meta['pagination'] as Map<String, dynamic>? ?? const {};
+    return (
+      cursor: p['nextCursor'] as String?,
+      hasMore: p['hasNextPage'] as bool? ?? false,
+    );
   }
 }
