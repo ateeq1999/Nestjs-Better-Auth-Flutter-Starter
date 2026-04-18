@@ -28,11 +28,17 @@ class DioService {
       ),
     );
 
-    _dio.interceptors.add(_AuthInterceptor(authService: authService, dio: _dio));
+    _dio.interceptors.add(
+      _AuthInterceptor(authService: authService, dio: _dio),
+    );
 
     if (kDebugMode) {
       _dio.interceptors.add(
-        LogInterceptor(requestBody: true, responseBody: true, logPrint: (o) => debugPrint(o.toString())),
+        LogInterceptor(
+          requestBody: true,
+          responseBody: true,
+          logPrint: (o) => debugPrint(o.toString()),
+        ),
       );
     }
   }
@@ -48,7 +54,7 @@ class _AuthInterceptor extends Interceptor {
   /// triggering this interceptor recursively.
   late final Dio _refreshDio = Dio(
     BaseOptions(
-      baseUrl: dotenv.env['API_URL'] ?? 'http://10.0.2.2:5555',
+      baseUrl: dotenv.env['API_URL'] ?? 'http://localhost:3000',
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
       headers: {
