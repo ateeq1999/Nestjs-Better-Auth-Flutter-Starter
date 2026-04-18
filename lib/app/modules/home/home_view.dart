@@ -39,6 +39,18 @@ class HomeView extends StatelessWidget {
                   title: const Text('Settings'),
                   onTap: () => context.push(AppRoutes.settings),
                 ),
+                ListTile(
+                  leading: const Icon(Icons.business),
+                  title: const Text('Organizations'),
+                  onTap: () => context.push(AppRoutes.organizations),
+                ),
+                if (user?.role == 'admin')
+                  ListTile(
+                    leading: const Icon(Icons.admin_panel_settings,
+                        color: Colors.deepPurple),
+                    title: const Text('Admin Dashboard'),
+                    onTap: () => context.push(AppRoutes.admin),
+                  ),
               ],
             ),
           ),

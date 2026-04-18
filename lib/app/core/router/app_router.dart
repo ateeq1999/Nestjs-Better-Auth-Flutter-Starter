@@ -16,6 +16,19 @@ import '../../modules/auth/magic_link/magic_link_view.dart';
 import '../../modules/profile/profile_cubit.dart';
 import '../../modules/settings/settings_cubit.dart';
 import '../../modules/splash/splash_view.dart';
+import '../../modules/admin/admin_stats_cubit.dart';
+import '../../modules/admin/admin_users_cubit.dart';
+import '../../modules/admin/audit_logs_cubit.dart';
+import '../../modules/admin/admin_dashboard_view.dart';
+import '../../modules/admin/admin_users_view.dart';
+import '../../modules/admin/admin_user_detail_view.dart';
+import '../../modules/admin/audit_logs_view.dart';
+import '../../modules/organizations/org_list_cubit.dart';
+import '../../modules/organizations/org_detail_cubit.dart';
+import '../../modules/organizations/org_invitation_cubit.dart';
+import '../../modules/organizations/orgs_list_view.dart';
+import '../../modules/organizations/org_detail_view.dart';
+import '../../modules/organizations/org_invite_view.dart';
 import '../../modules/auth/sign_in/sign_in_view.dart';
 import '../../modules/auth/sign_up/sign_up_view.dart';
 import '../../modules/auth/forgot_password/forgot_password_view.dart';
@@ -27,6 +40,9 @@ import '../../modules/profile/profile_view.dart';
 import '../../modules/settings/settings_view.dart';
 import '../../data/repositories/auth.repository.dart';
 import '../../data/repositories/user.repository.dart';
+import '../../data/repositories/admin.repository.dart';
+import '../../data/repositories/organization.repository.dart';
+import '../../data/models/admin_user.model.dart';
 import '../../services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -60,6 +76,13 @@ GoRouter createRouter({
 
       if (!isAuthenticated && !isOnAuthRoute) return AppRoutes.signIn;
       if (isAuthenticated && isOnAuthRoute) return AppRoutes.home;
+
+      // Admin routes require role == 'admin'.
+      if (isAuthenticated &&
+          location.startsWith(AppRoutes.admin) &&
+          authState.user.role != 'admin') {
+        return AppRoutes.home;
+      }
 
       return null;
     },
@@ -169,6 +192,87 @@ GoRouter createRouter({
           ),
           child: const SettingsView(),
         ),
+      ),
+
+      // ── Admin routes (role=admin required — enforced in redirect) ────────
+      GoRoute(
+        path: AppRoutes.admin,
+        builder: (context, _) => BlocProvider(
+          create: (_) => AdminStatsCubit(
+            adminRepository: context.read<AdminRepository>(),
+          ),
+          child: const AdminDashboardView(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.adminUsers,
+        builder: (context, _) => BlocProvider(
+          create: (_) => AdminUsersCubit(
+            adminRepository: context.read<AdminRepository>(),
+          ),
+          child: const AdminUsersView(),
+        ),
+      ),
+      GoRoute(
+        path: '${AppRoutes.adminUsers}/:id',
+        builder: (context, state) {
+          final user = state.extra as AdminUser?;
+          if (user == null) {
+            return const Scaffold(
+              body: Center(child: Text('User not available')),
+            );
+          }
+          return BlocProvider(
+            create: (_) => AdminUsersCubit(
+              adminRepository: context.read<AdminRepository>(),
+            ),
+            child: AdminUserDetailView(user: user),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.adminAuditLogs,
+        builder: (context, _) => BlocProvider(
+          create: (_) => AuditLogsCubit(
+            adminRepository: context.read<AdminRepository>(),
+          ),
+          child: const AuditLogsView(),
+        ),
+      ),
+
+      // ── Organizations routes ─────────────────────────────────────────────
+      GoRoute(
+        path: AppRoutes.organizations,
+        builder: (context, _) => BlocProvider(
+          create: (_) => OrgListCubit(
+            orgRepository: context.read<OrganizationRepository>(),
+          ),
+          child: const OrgsListView(),
+        ),
+      ),
+      GoRoute(
+        path: '${AppRoutes.organizations}/:id',
+        builder: (context, state) {
+          final orgId = state.pathParameters['id']!;
+          return BlocProvider(
+            create: (_) => OrgDetailCubit(
+              orgRepository: context.read<OrganizationRepository>(),
+            ),
+            child: OrgDetailView(orgId: orgId),
+          );
+        },
+      ),
+      GoRoute(
+        path: '${AppRoutes.organizations}/:id/invite',
+        builder: (context, state) {
+          final orgId = state.pathParameters['id']!;
+          return BlocProvider(
+            create: (_) => OrgInvitationCubit(
+              orgRepository: context.read<OrganizationRepository>(),
+            ),
+            child: OrgInviteView(orgId: orgId),
+          );
+        },
       ),
     ],
   );

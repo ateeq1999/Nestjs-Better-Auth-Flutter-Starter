@@ -152,6 +152,10 @@ class _MyAppState extends State<MyApp> {
         if (token != null) {
           router.go('${AppRoutes.resetPassword}?token=$token');
         }
+      case '/magic-link':
+        if (token != null) {
+          router.go('${AppRoutes.magicLink}?token=$token');
+        }
     }
   }
 
