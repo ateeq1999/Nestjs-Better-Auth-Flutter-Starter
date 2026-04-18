@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/secure_screen.dart';
 import '../../../core/utils/snackbar_helper.dart';
 import '../../../routes/app_routes.dart';
 import '../auth_bloc.dart';
@@ -15,7 +16,8 @@ class TwoFactorView extends StatefulWidget {
   State<TwoFactorView> createState() => _TwoFactorViewState();
 }
 
-class _TwoFactorViewState extends State<TwoFactorView> {
+class _TwoFactorViewState extends State<TwoFactorView>
+    with SecureScreenMixin {
   final _codeController = TextEditingController();
 
   @override
@@ -29,6 +31,7 @@ class _TwoFactorViewState extends State<TwoFactorView> {
     return BlocConsumer<TwoFactorCubit, TwoFactorState>(
       listener: (context, state) {
         if (state is TwoFactorSuccess && state.token != null) {
+          Clipboard.setData(const ClipboardData(text: ''));
           context.read<AuthBloc>().add(
                 AuthUserChanged(user: state.user, token: state.token!),
               );

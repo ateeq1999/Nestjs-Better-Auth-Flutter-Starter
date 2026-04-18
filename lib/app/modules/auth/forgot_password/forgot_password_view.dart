@@ -74,6 +74,8 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.send,
+                    autofillHints: const [AutofillHints.email, AutofillHints.username],
                     forceErrorText: fieldErrors?['email'],
                     decoration: const InputDecoration(
                       labelText: 'Email',

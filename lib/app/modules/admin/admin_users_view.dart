@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/utils/snackbar_helper.dart';
+import '../../core/widgets/empty_state.dart';
 import '../../routes/app_routes.dart';
 import 'admin_users_cubit.dart';
 
@@ -69,59 +70,76 @@ class _AdminUsersViewState extends State<AdminUsersView> {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is AdminUsersLoaded) {
-            if (state.users.isEmpty) {
-              return const Center(child: Text('No users found.'));
-            }
-            return NotificationListener<ScrollNotification>(
-              onNotification: (n) {
-                if (n.metrics.pixels >= n.metrics.maxScrollExtent - 200) {
-                  context.read<AdminUsersCubit>().loadMore();
-                }
-                return false;
-              },
-              child: ListView.separated(
-                itemCount:
-                    state.users.length + (state.hasMore ? 1 : 0),
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (context, i) {
-                  if (i == state.users.length) {
-                    return const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-                  final user = state.users[i];
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage:
-                          user.image != null ? NetworkImage(user.image!) : null,
-                      child: user.image == null
-                          ? Text(
-                              (user.name ?? user.email)[0].toUpperCase())
-                          : null,
-                    ),
-                    title: Text(user.name ?? user.email),
-                    subtitle: Text(user.email),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (user.banned)
-                          const Icon(Icons.block,
-                              color: Colors.red, size: 16),
-                        if (user.role != null)
-                          Chip(
-                            label: Text(user.role!,
-                                style: const TextStyle(fontSize: 11)),
-                            padding: EdgeInsets.zero,
-                          ),
-                        const Icon(Icons.chevron_right),
+            return RefreshIndicator(
+              onRefresh: () => context
+                  .read<AdminUsersCubit>()
+                  .loadUsers(search: _searchController.text),
+              child: state.users.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 80),
+                        EmptyState(
+                          icon: Icons.person_search_outlined,
+                          title: 'No users found',
+                          message: 'Try a different search, or pull to refresh.',
+                        ),
                       ],
+                    )
+                  : NotificationListener<ScrollNotification>(
+                      onNotification: (n) {
+                        if (n.metrics.pixels >=
+                            n.metrics.maxScrollExtent - 200) {
+                          context.read<AdminUsersCubit>().loadMore();
+                        }
+                        return false;
+                      },
+                      child: ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount:
+                            state.users.length + (state.hasMore ? 1 : 0),
+                        separatorBuilder: (_, _) => const Divider(height: 1),
+                        itemBuilder: (context, i) {
+                          if (i == state.users.length) {
+                            return const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+                          final user = state.users[i];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage: user.image != null
+                                  ? NetworkImage(user.image!)
+                                  : null,
+                              child: user.image == null
+                                  ? Text(
+                                      (user.name ?? user.email)[0].toUpperCase())
+                                  : null,
+                            ),
+                            title: Text(user.name ?? user.email),
+                            subtitle: Text(user.email),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (user.banned)
+                                  const Icon(Icons.block,
+                                      color: Colors.red, size: 16),
+                                if (user.role != null)
+                                  Chip(
+                                    label: Text(user.role!,
+                                        style: const TextStyle(fontSize: 11)),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                const Icon(Icons.chevron_right),
+                              ],
+                            ),
+                            onTap: () => context
+                                .push(AppRoutes.adminUserDetail(user.id)),
+                          );
+                        },
+                      ),
                     ),
-                    onTap: () =>
-                        context.push(AppRoutes.adminUserDetail(user.id)),
-                  );
-                },
-              ),
             );
           }
           return const SizedBox.shrink();

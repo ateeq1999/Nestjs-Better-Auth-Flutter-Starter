@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/secure_screen.dart';
 import '../../../core/utils/snackbar_helper.dart';
 import '../../../routes/app_routes.dart';
 import 'reset_password_cubit.dart';
@@ -14,7 +15,8 @@ class ResetPasswordView extends StatefulWidget {
   State<ResetPasswordView> createState() => _ResetPasswordViewState();
 }
 
-class _ResetPasswordViewState extends State<ResetPasswordView> {
+class _ResetPasswordViewState extends State<ResetPasswordView>
+    with SecureScreenMixin {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -52,7 +54,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
             padding: const EdgeInsets.all(24),
             child: Form(
               key: _formKey,
-              child: Column(
+              child: AutofillGroup(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 40),
@@ -74,6 +77,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                     builder: (context, _) => TextFormField(
                       controller: _passwordController,
                       obscureText: cubit.isPasswordHidden,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.newPassword],
                       forceErrorText: fieldErrors?['password'],
                       decoration: InputDecoration(
                         labelText: 'New Password',
@@ -97,6 +102,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: true,
+                    textInputAction: TextInputAction.done,
+                    autofillHints: const [AutofillHints.newPassword],
                     decoration: const InputDecoration(
                       labelText: 'Confirm Password',
                       border: OutlineInputBorder(),
@@ -132,6 +139,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                         : const Text('Reset Password'),
                   ),
                 ],
+                ),
               ),
             ),
           ),

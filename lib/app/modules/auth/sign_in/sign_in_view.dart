@@ -70,13 +70,16 @@ class _SignInViewState extends State<SignInView> {
             padding: const EdgeInsets.all(24),
             child: Form(
               key: _formKey,
-              child: Column(
+              child: AutofillGroup(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 40),
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.username, AutofillHints.email],
                     forceErrorText: fieldErrors?['email'],
                     decoration: const InputDecoration(
                       labelText: 'Email',
@@ -95,7 +98,17 @@ class _SignInViewState extends State<SignInView> {
                     builder: (context, _) => TextFormField(
                       controller: _passwordController,
                       obscureText: cubit.isPasswordHidden,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const [AutofillHints.password],
                       forceErrorText: fieldErrors?['password'],
+                      onFieldSubmitted: (_) {
+                        if (_formKey.currentState!.validate()) {
+                          cubit.signIn(
+                            email: _emailController.text,
+                            password: _passwordController.text,
+                          );
+                        }
+                      },
                       decoration: InputDecoration(
                         labelText: 'Password',
                         border: const OutlineInputBorder(),
@@ -163,6 +176,7 @@ class _SignInViewState extends State<SignInView> {
                       child: const Text('Sign in with Magic Link'),
                     ),
                 ],
+                ),
               ),
             ),
           ),

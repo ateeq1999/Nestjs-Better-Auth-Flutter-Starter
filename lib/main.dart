@@ -15,6 +15,7 @@ import 'firebase_options.dart';
 import 'app/core/config/feature_flags.dart';
 import 'app/core/router/app_router.dart';
 import 'app/core/theme/app_theme.dart';
+import 'app/core/widgets/offline_banner.dart';
 import 'app/modules/theme/theme_cubit.dart';
 import 'app/data/providers/auth.provider.dart';
 import 'app/data/providers/user.provider.dart';
@@ -208,6 +209,8 @@ class _MyAppState extends State<MyApp> {
               darkTheme: AppTheme.build(prefs, Brightness.dark),
               themeMode: prefs.themeMode,
               routerConfig: _routerHolder.router,
+              builder: (context, child) =>
+                  OfflineBanner(child: child ?? const SizedBox.shrink()),
             );
           },
         ),

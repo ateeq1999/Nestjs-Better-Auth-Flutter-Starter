@@ -19,6 +19,7 @@ State management is **`flutter_bloc`**; navigation is **`go_router`**; HTTP is *
 | [Architecture](./docs/architecture.md) | Understand the provider → repository → cubit → view layers |
 | [Feature flags](./docs/feature-flags.md) | Toggle, drop, or add a feature |
 | [Adding a feature](./docs/adding-a-feature.md) | Wire a new API + screen end-to-end |
+| [Security](./docs/security.md) | Pre-ship checklist — obfuscation, pinning, `.env` gotchas |
 
 API contract: [`Nestjs_Better_Auth_API_DOCS_2026-04-16.yaml`](./Nestjs_Better_Auth_API_DOCS_2026-04-16.yaml). Task history: [`todo.md`](./todo.md).
 

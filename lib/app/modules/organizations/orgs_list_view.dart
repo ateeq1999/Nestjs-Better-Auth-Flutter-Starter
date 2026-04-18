@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/utils/snackbar_helper.dart';
+import '../../core/widgets/empty_state.dart';
 import '../../routes/app_routes.dart';
 import 'org_list_cubit.dart';
 
@@ -39,24 +40,39 @@ class _OrgsListViewState extends State<OrgsListView> {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is OrgListLoaded) {
-            if (state.orgs.isEmpty) {
-              return const Center(
-                child: Text('No organizations yet. Create one!'),
-              );
-            }
-            return ListView.separated(
-              itemCount: state.orgs.length,
-              separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (context, i) {
-                final org = state.orgs[i];
-                return ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.business)),
-                  title: Text(org.name),
-                  subtitle: Text('Created ${org.createdAt.toLocal()}'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push(AppRoutes.orgDetail(org.id)),
-                );
-              },
+            return RefreshIndicator(
+              onRefresh: () => context.read<OrgListCubit>().loadOrgs(),
+              child: state.orgs.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        const SizedBox(height: 80),
+                        EmptyState(
+                          icon: Icons.business_outlined,
+                          title: 'No organizations yet',
+                          message: 'Create one to get started.',
+                          actionLabel: 'Create',
+                          onAction: () => _showCreateDialog(context),
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: state.orgs.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      itemBuilder: (context, i) {
+                        final org = state.orgs[i];
+                        return ListTile(
+                          leading:
+                              const CircleAvatar(child: Icon(Icons.business)),
+                          title: Text(org.name),
+                          subtitle: Text('Created ${org.createdAt.toLocal()}'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () =>
+                              context.push(AppRoutes.orgDetail(org.id)),
+                        );
+                      },
+                    ),
             );
           }
           return const SizedBox.shrink();

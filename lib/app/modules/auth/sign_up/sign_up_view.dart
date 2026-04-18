@@ -60,13 +60,16 @@ class _SignUpViewState extends State<SignUpView> {
             padding: const EdgeInsets.all(24),
             child: Form(
               key: _formKey,
-              child: Column(
+              child: AutofillGroup(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 20),
                   TextFormField(
                     controller: _nameController,
                     textCapitalization: TextCapitalization.words,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.name],
                     forceErrorText: fieldErrors?['name'],
                     decoration: const InputDecoration(
                       labelText: 'Full Name',
@@ -82,6 +85,8 @@ class _SignUpViewState extends State<SignUpView> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.email, AutofillHints.username],
                     forceErrorText: fieldErrors?['email'],
                     decoration: const InputDecoration(
                       labelText: 'Email',
@@ -99,6 +104,8 @@ class _SignUpViewState extends State<SignUpView> {
                     builder: (context, _) => TextFormField(
                       controller: _passwordController,
                       obscureText: cubit.isPasswordHidden,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.newPassword],
                       forceErrorText: fieldErrors?['password'],
                       decoration: InputDecoration(
                         labelText: 'Password',
@@ -111,7 +118,6 @@ class _SignUpViewState extends State<SignUpView> {
                           onPressed: cubit.togglePasswordVisibility,
                         ),
                       ),
-                      // BUG-15 fix: clear confirm field when password changes
                       onChanged: (_) => _confirmPasswordController.clear(),
                       validator: (v) {
                         if (v == null || v.isEmpty) return 'Please enter a password';
@@ -124,6 +130,8 @@ class _SignUpViewState extends State<SignUpView> {
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: true,
+                    textInputAction: TextInputAction.done,
+                    autofillHints: const [AutofillHints.newPassword],
                     decoration: const InputDecoration(
                       labelText: 'Confirm Password',
                       border: OutlineInputBorder(),
@@ -171,6 +179,7 @@ class _SignUpViewState extends State<SignUpView> {
                     ],
                   ),
                 ],
+                ),
               ),
             ),
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/secure_screen.dart';
 import '../../../core/utils/snackbar_helper.dart';
 import '../../../routes/app_routes.dart';
 import 'verify_email_cubit.dart';
@@ -14,7 +15,8 @@ class VerifyEmailView extends StatefulWidget {
   State<VerifyEmailView> createState() => _VerifyEmailViewState();
 }
 
-class _VerifyEmailViewState extends State<VerifyEmailView> {
+class _VerifyEmailViewState extends State<VerifyEmailView>
+    with SecureScreenMixin {
   @override
   void initState() {
     super.initState();
