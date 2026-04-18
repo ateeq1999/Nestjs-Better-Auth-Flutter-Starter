@@ -12,7 +12,10 @@ import 'package:go_router/go_router.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 
 import 'firebase_options.dart';
+import 'app/core/config/feature_flags.dart';
 import 'app/core/router/app_router.dart';
+import 'app/core/theme/app_theme.dart';
+import 'app/modules/theme/theme_cubit.dart';
 import 'app/data/providers/auth.provider.dart';
 import 'app/data/providers/user.provider.dart';
 import 'app/data/providers/admin.provider.dart';
@@ -43,6 +46,7 @@ Future<void> main() async {
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   final prefs = await SharedPreferences.getInstance();
+  final featureFlags = FeatureFlags.fromEnv();
 
   // ── Dependency graph (bottom-up) ─────────────────────────────────────────
   final authService = AuthService();
@@ -67,6 +71,7 @@ Future<void> main() async {
       adminRepository: adminRepository,
       orgRepository: orgRepository,
       notificationService: notificationService,
+      featureFlags: featureFlags,
       prefs: prefs,
     ),
   );
@@ -81,6 +86,7 @@ class MyApp extends StatefulWidget {
     required this.adminRepository,
     required this.orgRepository,
     required this.notificationService,
+    required this.featureFlags,
     required this.prefs,
   });
 
@@ -90,6 +96,7 @@ class MyApp extends StatefulWidget {
   final AdminRepository adminRepository;
   final OrganizationRepository orgRepository;
   final NotificationService notificationService;
+  final FeatureFlags featureFlags;
   final SharedPreferences prefs;
 
   @override
@@ -176,32 +183,22 @@ class _MyAppState extends State<MyApp> {
         RepositoryProvider<UserRepository>.value(value: widget.userRepository),
         RepositoryProvider<AdminRepository>.value(value: widget.adminRepository),
         RepositoryProvider<OrganizationRepository>.value(value: widget.orgRepository),
+        RepositoryProvider<FeatureFlags>.value(value: widget.featureFlags),
       ],
-      child: BlocProvider<AuthBloc>.value(
-        value: _authBloc,
-        child: BlocBuilder<AuthBloc, AuthState>(
-          buildWhen: (prev, next) =>
-              // Only rebuild for theme-affecting state changes (isDarkMode
-              // lives in SettingsCubit but we apply it via shared prefs here).
-              prev.runtimeType != next.runtimeType,
-          builder: (context, _) {
-            final isDarkMode = widget.prefs.getBool('isDarkMode') ?? false;
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>.value(value: _authBloc),
+          BlocProvider<ThemeCubit>(create: (_) => ThemeCubit(widget.prefs)),
+        ],
+        child: BlocBuilder<ThemeCubit, ThemeState>(
+          builder: (context, themeState) {
+            final prefs = themeState.preferences;
             return MaterialApp.router(
               title: 'Flutter Starter',
               debugShowCheckedModeBanner: false,
-              theme: ThemeData(
-                useMaterial3: true,
-                colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-              ),
-              darkTheme: ThemeData(
-                useMaterial3: true,
-                brightness: Brightness.dark,
-                colorScheme: ColorScheme.fromSeed(
-                  seedColor: Colors.deepPurple,
-                  brightness: Brightness.dark,
-                ),
-              ),
-              themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+              theme: AppTheme.build(prefs, Brightness.light),
+              darkTheme: AppTheme.build(prefs, Brightness.dark),
+              themeMode: prefs.themeMode,
               routerConfig: _routerHolder.router,
             );
           },

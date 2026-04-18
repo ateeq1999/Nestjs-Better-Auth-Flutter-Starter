@@ -15,6 +15,7 @@ import '../../modules/auth/magic_link/magic_link_cubit.dart';
 import '../../modules/auth/magic_link/magic_link_view.dart';
 import '../../modules/profile/profile_cubit.dart';
 import '../../modules/settings/settings_cubit.dart';
+import '../../modules/theme/theme_settings_view.dart';
 import '../../modules/splash/splash_view.dart';
 import '../../modules/admin/admin_stats_cubit.dart';
 import '../../modules/admin/admin_users_cubit.dart';
@@ -192,6 +193,10 @@ GoRouter createRouter({
           ),
           child: const SettingsView(),
         ),
+      ),
+      GoRoute(
+        path: AppRoutes.appearance,
+        builder: (context, _) => const ThemeSettingsView(),
       ),
 
       // ── Admin routes (role=admin required — enforced in redirect) ────────

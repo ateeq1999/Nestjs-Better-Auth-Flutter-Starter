@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/config/feature_flags.dart';
 import '../../routes/app_routes.dart';
 import '../auth/auth_bloc.dart';
 
@@ -10,6 +11,7 @@ class HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final flags = context.read<FeatureFlags>();
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final user =
@@ -39,12 +41,13 @@ class HomeView extends StatelessWidget {
                   title: const Text('Settings'),
                   onTap: () => context.push(AppRoutes.settings),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.business),
-                  title: const Text('Organizations'),
-                  onTap: () => context.push(AppRoutes.organizations),
-                ),
-                if (user?.role == 'admin')
+                if (flags.organizations)
+                  ListTile(
+                    leading: const Icon(Icons.business),
+                    title: const Text('Organizations'),
+                    onTap: () => context.push(AppRoutes.organizations),
+                  ),
+                if (flags.admin && user?.role == 'admin')
                   ListTile(
                     leading: const Icon(Icons.admin_panel_settings,
                         color: Colors.deepPurple),

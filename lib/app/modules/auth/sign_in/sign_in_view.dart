@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config/feature_flags.dart';
 import '../../../core/utils/snackbar_helper.dart';
 import '../../../routes/app_routes.dart';
 import '../auth_bloc.dart';
@@ -56,6 +57,7 @@ class _SignInViewState extends State<SignInView> {
       builder: (context, state) {
         final cubit = context.read<SignInCubit>();
         final isLoading = state is SignInLoading;
+        final flags = context.read<FeatureFlags>();
 
         return Scaffold(
           appBar: AppBar(title: const Text('Sign In')),
@@ -137,20 +139,22 @@ class _SignInViewState extends State<SignInView> {
                         : const Text('Sign In'),
                   ),
                   const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Don't have an account?"),
-                      TextButton(
-                        onPressed: () => context.push(AppRoutes.signUp),
-                        child: const Text('Sign Up'),
-                      ),
-                    ],
-                  ),
-                  TextButton(
-                    onPressed: () => context.push(AppRoutes.magicLink),
-                    child: const Text('Sign in with Magic Link'),
-                  ),
+                  if (flags.signUp)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text("Don't have an account?"),
+                        TextButton(
+                          onPressed: () => context.push(AppRoutes.signUp),
+                          child: const Text('Sign Up'),
+                        ),
+                      ],
+                    ),
+                  if (flags.magicLink)
+                    TextButton(
+                      onPressed: () => context.push(AppRoutes.magicLink),
+                      child: const Text('Sign in with Magic Link'),
+                    ),
                 ],
               ),
             ),

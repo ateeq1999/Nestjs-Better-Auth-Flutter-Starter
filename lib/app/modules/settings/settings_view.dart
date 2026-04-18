@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/config/feature_flags.dart';
 import '../../core/utils/snackbar_helper.dart';
+import '../../routes/app_routes.dart';
 import '../auth/auth_bloc.dart';
 import 'settings_cubit.dart';
 
@@ -34,6 +37,7 @@ class SettingsView extends StatelessWidget {
       builder: (context, state) {
         final cubit = context.read<SettingsCubit>();
         final isLoading = state is SettingsLoading;
+        final flags = context.read<FeatureFlags>();
         // FL7.6: read twoFactorEnabled from AuthBloc user
         final authState = context.watch<AuthBloc>().state;
         final twoFactorEnabled = authState is AuthAuthenticated
@@ -53,7 +57,7 @@ class SettingsView extends StatelessWidget {
                       onTap: () => _showChangePasswordDialog(context, cubit),
                     ),
                     const Divider(),
-                    if (!twoFactorEnabled)
+                    if (flags.twoFactor && !twoFactorEnabled)
                       ListTile(
                         leading: const Icon(Icons.security),
                         title: const Text('Enable Two-Factor Auth'),
@@ -61,7 +65,7 @@ class SettingsView extends StatelessWidget {
                         trailing: const Icon(Icons.chevron_right),
                         onTap: cubit.enableTwoFactor,
                       ),
-                    if (twoFactorEnabled)
+                    if (flags.twoFactor && twoFactorEnabled)
                       ListTile(
                         leading: const Icon(Icons.verified_user,
                             color: Colors.green),
@@ -75,12 +79,15 @@ class SettingsView extends StatelessWidget {
                         ),
                       ),
                     const Divider(),
-                    SwitchListTile(
-                      secondary: const Icon(Icons.dark_mode),
-                      title: const Text('Dark Mode'),
-                      value: cubit.isDarkMode,
-                      onChanged: (_) => cubit.toggleTheme(),
-                    ),
+                    if (flags.themeCustomization)
+                      ListTile(
+                        leading: const Icon(Icons.palette_outlined),
+                        title: const Text('Appearance'),
+                        subtitle: const Text(
+                            'Theme, color, corner radius, density'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.push(AppRoutes.appearance),
+                      ),
                     const Divider(),
                     ListTile(
                       leading: const Icon(Icons.logout, color: Colors.orange),

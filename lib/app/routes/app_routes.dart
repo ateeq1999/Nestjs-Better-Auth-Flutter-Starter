@@ -10,6 +10,7 @@ abstract class AppRoutes {
   static const home = '/home';
   static const profile = '/profile';
   static const settings = '/settings';
+  static const appearance = '/settings/appearance';
 
   // Admin
   static const admin = '/admin';
