@@ -61,7 +61,45 @@ class ProfileView extends StatelessWidget {
                       ListTile(
                         title: const Text('Email'),
                         subtitle: Text(user?.email ?? ''),
+                        trailing: (user?.emailVerified ?? false)
+                            ? const Icon(Icons.verified,
+                                color: Colors.green, size: 20)
+                            : null,
                       ),
+                      if (user != null) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            if (user.twoFactorEnabled)
+                              Chip(
+                                avatar: const Icon(Icons.shield_outlined,
+                                    size: 16),
+                                label: const Text('2FA Enabled'),
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
+                              )
+                            else
+                              const Chip(
+                                avatar: Icon(Icons.shield_outlined, size: 16),
+                                label: Text('2FA Disabled'),
+                              ),
+                            if (user.role == 'admin')
+                              Chip(
+                                avatar: const Icon(
+                                    Icons.admin_panel_settings_outlined,
+                                    size: 16),
+                                label: const Text('Admin'),
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .tertiaryContainer,
+                              ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

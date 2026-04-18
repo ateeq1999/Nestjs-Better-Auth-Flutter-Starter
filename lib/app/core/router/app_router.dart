@@ -30,6 +30,7 @@ import '../../modules/organizations/org_invitation_cubit.dart';
 import '../../modules/organizations/orgs_list_view.dart';
 import '../../modules/organizations/org_detail_view.dart';
 import '../../modules/organizations/org_invite_view.dart';
+import '../../modules/organizations/invitation_accept_view.dart';
 import '../../modules/auth/sign_in/sign_in_view.dart';
 import '../../modules/auth/sign_up/sign_up_view.dart';
 import '../../modules/auth/forgot_password/forgot_password_view.dart';
@@ -187,6 +188,7 @@ GoRouter createRouter({
         builder: (context, _) => BlocProvider(
           create: (_) => SettingsCubit(
             authRepository: context.read<AuthRepository>(),
+            userRepository: context.read<UserRepository>(),
             authService: context.read<AuthService>(),
             authBloc: context.read<AuthBloc>(),
             prefs: prefs,
@@ -276,6 +278,16 @@ GoRouter createRouter({
               orgRepository: context.read<OrganizationRepository>(),
             ),
             child: OrgInviteView(orgId: orgId),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.orgInvitationAccept,
+        builder: (context, state) {
+          final token = state.uri.queryParameters['token'] ?? '';
+          return InvitationAcceptView(
+            token: token,
+            orgRepository: context.read<OrganizationRepository>(),
           );
         },
       ),

@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/repositories/auth.repository.dart';
+import '../../data/repositories/user.repository.dart';
 import '../../services/auth_service.dart';
 import '../../core/errors/app_exception.dart';
 import '../auth/auth_bloc.dart';
@@ -11,16 +12,19 @@ part 'settings_state.dart';
 class SettingsCubit extends Cubit<SettingsState> {
   SettingsCubit({
     required AuthRepository authRepository,
+    required UserRepository userRepository,
     required AuthService authService,
     required AuthBloc authBloc,
     required SharedPreferences prefs,
   })  : _authRepository = authRepository,
+        _userRepository = userRepository,
         _authService = authService,
         _authBloc = authBloc,
         _prefs = prefs,
         super(SettingsInitial(isDarkMode: prefs.getBool('isDarkMode') ?? false));
 
   final AuthRepository _authRepository;
+  final UserRepository _userRepository;
   final AuthService _authService;
   final AuthBloc _authBloc;
   final SharedPreferences _prefs;
@@ -35,6 +39,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       SettingsTwoFactorEnabled(:final isDarkMode) => isDarkMode,
       SettingsTwoFactorDisabled(:final isDarkMode) => isDarkMode,
       SettingsTwoFactorVerified(:final isDarkMode) => isDarkMode,
+      SettingsAccountDeleted(:final isDarkMode) => isDarkMode,
     };
   }
 
@@ -108,6 +113,21 @@ class SettingsCubit extends Cubit<SettingsState> {
     try {
       await _authRepository.disableTwoFactor(code: code);
       emit(SettingsTwoFactorDisabled(isDarkMode: isDarkMode));
+    } on ApiException catch (e) {
+      emit(SettingsFailure(e.message, isDarkMode: isDarkMode));
+    } catch (e) {
+      emit(SettingsFailure(e.toString(), isDarkMode: isDarkMode));
+    }
+  }
+
+  Future<void> deleteAccount({String? password}) async {
+    emit(SettingsLoading(isDarkMode: isDarkMode));
+    try {
+      await _userRepository.deleteAccount(password: password);
+      emit(SettingsAccountDeleted(isDarkMode: isDarkMode));
+      // Clear local auth state so GoRouter redirects to sign-in.
+      await _authService.signOut();
+      _authBloc.add(const AuthSignedOut());
     } on ApiException catch (e) {
       emit(SettingsFailure(e.message, isDarkMode: isDarkMode));
     } catch (e) {

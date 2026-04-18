@@ -45,3 +45,8 @@ final class SettingsTwoFactorVerified extends SettingsState {
   const SettingsTwoFactorVerified({required this.isDarkMode});
   final bool isDarkMode;
 }
+
+final class SettingsAccountDeleted extends SettingsState {
+  const SettingsAccountDeleted({required this.isDarkMode});
+  final bool isDarkMode;
+}

@@ -29,6 +29,8 @@ class SettingsView extends StatelessWidget {
           SnackbarHelper.showSuccess(
               context, 'Two-factor authentication disabled');
           context.read<SettingsCubit>().resetToInitial();
+        } else if (state is SettingsAccountDeleted) {
+          SnackbarHelper.showSuccess(context, 'Account deleted');
         } else if (state is SettingsFailure) {
           SnackbarHelper.showError(context, state.message);
           context.read<SettingsCubit>().resetToInitial();
@@ -94,6 +96,18 @@ class SettingsView extends StatelessWidget {
                       title: const Text('Sign Out'),
                       onTap: cubit.signOut,
                     ),
+                    if (flags.deleteAccount) ...[
+                      const Divider(),
+                      ListTile(
+                        leading: const Icon(Icons.delete_forever,
+                            color: Colors.red),
+                        title: const Text('Delete Account',
+                            style: TextStyle(color: Colors.red)),
+                        subtitle: const Text(
+                            'Permanently remove your account and data'),
+                        onTap: () => _showDeleteAccountDialog(context, cubit),
+                      ),
+                    ],
                   ],
                 ),
         );
@@ -218,6 +232,65 @@ class SettingsView extends StatelessWidget {
                 style: TextStyle(color: Colors.white)),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, SettingsCubit cubit) {
+    final passwordController = TextEditingController();
+    final confirmController = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) => AlertDialog(
+          title: const Text('Delete Account',
+              style: TextStyle(color: Colors.red)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'This action is permanent. Your account, profile data, and '
+                'organizations you own will be deleted.',
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                onChanged: (_) => setState(() {}),
+                decoration: const InputDecoration(
+                  labelText: 'Current password',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: confirmController,
+                onChanged: (_) => setState(() {}),
+                decoration: const InputDecoration(
+                  labelText: 'Type DELETE to confirm',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: confirmController.text.trim() == 'DELETE' &&
+                      passwordController.text.isNotEmpty
+                  ? () {
+                      Navigator.of(dialogContext).pop();
+                      cubit.deleteAccount(password: passwordController.text);
+                    }
+                  : null,
+              child: const Text('Delete Forever',
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
       ),
     );
   }

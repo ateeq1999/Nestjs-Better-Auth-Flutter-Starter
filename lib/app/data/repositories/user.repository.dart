@@ -45,6 +45,14 @@ class UserRepository {
     }
   }
 
+  Future<void> deleteAccount({String? password}) async {
+    try {
+      await _provider.deleteAccount(password: password);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
   Future<void> registerDeviceToken({
     required String token,
     required String platform,

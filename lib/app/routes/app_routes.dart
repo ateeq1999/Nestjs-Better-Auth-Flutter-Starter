@@ -20,6 +20,7 @@ abstract class AppRoutes {
 
   // Organizations
   static const organizations = '/organizations';
+  static const orgInvitationAccept = '/invitations/accept';
   static String orgDetail(String id) => '/organizations/$id';
   static String orgInvite(String id) => '/organizations/$id/invite';
 }

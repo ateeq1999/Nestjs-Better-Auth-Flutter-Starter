@@ -138,10 +138,18 @@ class _MyAppState extends State<MyApp> {
   void _handleDeepLink(Uri uri) {
     final scheme = dotenv.env['APP_SCHEME'] ?? 'myapp';
     if (uri.scheme != scheme && uri.scheme != 'myapp') return;
-    if (uri.host != 'auth') return;
 
     final token = uri.queryParameters['token'];
     final router = _routerHolder.router;
+
+    if (uri.host == 'invite' || uri.host == 'invitations') {
+      if (token != null) {
+        router.go('${AppRoutes.orgInvitationAccept}?token=$token');
+      }
+      return;
+    }
+
+    if (uri.host != 'auth') return;
 
     switch (uri.path) {
       case '/callback':

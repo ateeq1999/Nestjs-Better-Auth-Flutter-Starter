@@ -29,6 +29,11 @@ class UserProvider {
   Future<Response<dynamic>> deleteAvatar() =>
       _dio.delete('/v1/api/users/me/avatar');
 
+  Future<Response<dynamic>> deleteAccount({String? password}) => _dio.delete(
+        '/v1/api/users/me',
+        data: password == null ? null : {'password': password},
+      );
+
   // BUG-U5: was /api/users/me/devices
   Future<Response<dynamic>> registerDeviceToken({
     required String token,
