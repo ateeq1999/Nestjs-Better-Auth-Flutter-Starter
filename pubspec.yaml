@@ -44,7 +44,7 @@ dependencies:
   app_links: ^7.0.0
 
   # Connectivity
-  connectivity_plus: ^6.0.5
+  connectivity_plus: ^7.1.1
 
   # Security
   flutter_windowmanager: ^0.2.0     # Android FLAG_SECURE to block screenshots
