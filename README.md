@@ -1,556 +1,211 @@
 # Flutter Starter
 
-![Flutter](https://img.shields.io/badge/Flutter-3.x-blue?logo=flutter)
+![Flutter](https://img.shields.io/badge/Flutter-3.11%2B-blue?logo=flutter)
 ![Dart](https://img.shields.io/badge/Dart-3.x-blue?logo=dart)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Tests](https://img.shields.io/badge/Tests-25%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-67%20passing-brightgreen)
 
-Cross-platform mobile app (iOS + Android) using Flutter + **flutter_bloc**. Authenticates against the NestJS Better-Auth API using Bearer tokens. Firebase handles push notifications and optional analytics.
+Production-ready Flutter template for iOS + Android + web. Authenticates against a NestJS / Better-Auth backend using Bearer tokens, with opt-out feature modules for admin, organizations, magic-link sign-in, 2FA, push notifications, and theme customization.
 
-> **State Management Migration:** This project is migrating from GetX to `flutter_bloc` + `go_router`. GetX is no longer actively maintained. All new features must use BLoC/Cubit. See [FL11 in todo.md](./todo.md#fl11--bloc-migration-getx--flutter_bloc) for the migration task list.
+State management is **`flutter_bloc`**; navigation is **`go_router`**; HTTP is **Dio** with a Bearer-token interceptor and automatic 401 refresh.
+
+---
+
+## Documentation
+
+| Guide | When to read |
+|---|---|
+| [Getting started](./docs/getting-started.md) | First-time setup — clone, env, Firebase, run |
+| [Architecture](./docs/architecture.md) | Understand the provider → repository → cubit → view layers |
+| [Feature flags](./docs/feature-flags.md) | Toggle, drop, or add a feature |
+| [Adding a feature](./docs/adding-a-feature.md) | Wire a new API + screen end-to-end |
+
+API contract: [`Nestjs_Better_Auth_API_DOCS_2026-04-16.yaml`](./Nestjs_Better_Auth_API_DOCS_2026-04-16.yaml). Task history: [`todo.md`](./todo.md).
+
+---
+
+## What's in the box
+
+| Module | Flag | Notes |
+|---|---|---|
+| Email + password auth | always on | Sign in, sign up, forgot / reset password, email verification |
+| Magic-link auth | `FEATURE_MAGIC_LINK` | Deep-link verify → auto-signed-in |
+| Two-factor auth (TOTP) | `FEATURE_TWO_FACTOR` | QR enrol, verify-setup, disable |
+| Sign up | `FEATURE_SIGN_UP` | Hide to force admin-provisioned accounts |
+| OAuth (placeholder) | `FEATURE_OAUTH` | Hooks for your own providers |
+| Admin panel | `FEATURE_ADMIN` | Paginated users, audit logs, stats; gated by `role == 'admin'` |
+| Organizations | `FEATURE_ORGANIZATIONS` | CRUD, members with roles, invitations (+ deep link) |
+| Push notifications | `FEATURE_PUSH_NOTIFICATIONS` | FCM + device-token registration |
+| Theme customization | `FEATURE_THEME_CUSTOMIZATION` | Mode / seed color / radius / density with live preview |
+| Delete account | `FEATURE_DELETE_ACCOUNT` | Password-gated destructive flow |
+
+Flip any flag in `.env`; delete any module entirely by following [docs/feature-flags.md](./docs/feature-flags.md#dropping-a-feature-delete-the-code).
 
 ---
 
 ## Stack
 
-| Layer | Technology | Notes |
+| Layer | Package | Purpose |
 |---|---|---|
-| Framework | Flutter 3.x (stable channel) | Dart 3 with null safety |
-| State Management | `flutter_bloc` + `equatable` | BLoC/Cubit pattern; replaces GetX |
-| Navigation | `go_router` | Declarative routing with `redirect` guard; replaces GetX routes |
-| HTTP | Dio + `dio_cache_interceptor` | Interceptors for Bearer token, refresh, logging |
-| Secure Storage | `flutter_secure_storage` | iOS Keychain / Android Keystore |
-| Local Storage | `shared_preferences` | Non-sensitive prefs (theme, locale) |
-| State Persistence | `hydrated_bloc` | Persists `AuthBloc` + `ThemeCubit` across restarts |
-| Forms | `flutter_form_builder` + `form_builder_validators` | Consistent form UX |
-| Images | `cached_network_image` | Profile avatars with memory + disk cache |
-| File Upload | `image_picker` + Dio `FormData` | Avatar upload (JPEG/PNG/WebP) |
-| Push Notifications | Firebase Cloud Messaging (`firebase_messaging`) | FCM on Android; APNs via FCM on iOS |
-| Analytics | `firebase_analytics` (optional) | Screen tracking, custom events |
-| Deep Links | `app_links` | OAuth callback: `myapp://auth/callback` |
-| Env Config | `flutter_dotenv` | `.env` → `String.fromEnvironment` alternative |
-| Code Gen | `build_runner` + `freezed` + `json_serializable` | Immutable models, JSON serialization |
-| Testing | `flutter_test` + `mocktail` + `bloc_test` | Unit + widget + integration |
-| Linting | `flutter_lints` + custom analysis options | Strict rules |
+| State | `flutter_bloc`, `bloc`, `equatable`, `hydrated_bloc` | Cubit/BLoC + persisted `AuthBloc` |
+| Navigation | `go_router` | `redirect` guard driven by `AuthBloc` stream |
+| HTTP | `dio`, `dio_cache_interceptor` | Bearer token + 401 refresh interceptor |
+| Storage | `flutter_secure_storage`, `shared_preferences` | Tokens in keystore; prefs for theme |
+| Forms | `flutter_form_builder`, `form_builder_validators` | Plus `TextFormField.forceErrorText` for server-side field errors |
+| Images | `cached_network_image`, `image_picker` | Avatars |
+| Deep links | `app_links` | Custom scheme (`myapp://`) — OAuth, magic link, invites |
+| Firebase | `firebase_core`, `firebase_messaging`, `firebase_analytics` | Push + analytics |
+| Env | `flutter_dotenv` | `.env` loaded at startup |
+| Codegen | `freezed`, `json_serializable`, `build_runner` | Immutable models |
+| Testing | `flutter_test`, `mocktail`, `bloc_test` | 67 unit + widget tests |
 
 ---
 
-## Architecture (BLoC Clean)
-
-The project follows a feature-first structure. Each feature has its own **Cubit/BLoC**, **View**, and injects its dependencies via `BlocProvider` / `RepositoryProvider`.
+## Layers at a glance
 
 ```
-lib/
-├── app/
-│   ├── core/
-│   │   ├── errors/
-│   │   │   └── app_exception.dart          # Typed exceptions (ApiException, AuthException)
-│   │   ├── router/
-│   │   │   └── app_router.dart             # GoRouter with redirect auth guard
-│   │   └── utils/
-│   │       └── snackbar_helper.dart
-│   ├── data/
-│   │   ├── models/
-│   │   │   ├── user.model.dart             # @freezed User, @JsonSerializable
-│   │   │   ├── session.model.dart
-│   │   │   └── auth_response.model.dart
-│   │   ├── providers/
-│   │   │   ├── auth.provider.dart          # Raw Dio calls to /api/auth/*
-│   │   │   └── user.provider.dart          # Raw Dio calls to /api/users/*
-│   │   └── repositories/
-│   │       ├── auth.repository.dart        # Business logic layer over providers
-│   │       └── user.repository.dart
-│   ├── modules/
-│   │   ├── splash/
-│   │   │   └── splash_view.dart
-│   │   ├── auth/
-│   │   │   ├── auth_bloc.dart              # AuthBloc: AuthStarted, SignIn, SignOut events
-│   │   │   ├── auth_event.dart
-│   │   │   ├── auth_state.dart
-│   │   │   ├── sign_in/
-│   │   │   │   ├── sign_in_cubit.dart
-│   │   │   │   ├── sign_in_state.dart
-│   │   │   │   └── sign_in_view.dart
-│   │   │   ├── sign_up/
-│   │   │   ├── forgot_password/
-│   │   │   ├── reset_password/
-│   │   │   ├── verify_email/
-│   │   │   └── two_factor/
-│   │   ├── home/
-│   │   │   └── home_view.dart
-│   │   ├── profile/
-│   │   │   ├── profile_cubit.dart
-│   │   │   ├── profile_state.dart
-│   │   │   └── profile_view.dart
-│   │   └── settings/
-│   │       ├── settings_cubit.dart
-│   │       ├── settings_state.dart
-│   │       └── settings_view.dart
-│   └── services/
-│       ├── dio_service.dart                # Dio instance, AuthInterceptor (Bearer + refresh)
-│       └── notification_service.dart       # FCM init, token registration
-├── firebase_options.dart                   # FlutterFire CLI generated
-└── main.dart                               # runApp + DotEnv.load + Firebase.initializeApp
+View                     ← widgets, side effects (snackbar, navigation)
+  │ context.read<Cubit>()
+Cubit / BLoC             ← sealed UI states (*Initial, *Loading, *Loaded, *Failure)
+  │
+Repository               ← DioException → ApiException; envelope unwrap
+  │
+Provider                 ← raw Dio calls to /v1/api/...
+  │
+DioService               ← Bearer token + 401 refresh + base URL from .env
 ```
+
+Full directory map and design rationale: [docs/architecture.md](./docs/architecture.md).
 
 ---
 
-## BLoC Pattern
-
-### AuthBloc (root-level)
-
-`AuthBloc` lives at the top of the widget tree and drives the router redirect. All authentication state flows through it.
-
-```dart
-// auth_state.dart
-sealed class AuthState extends Equatable {}
-class AuthInitial extends AuthState {}
-class AuthLoading extends AuthState {}
-class AuthAuthenticated extends AuthState {
-  final User user;
-  final String token;
-}
-class AuthUnauthenticated extends AuthState {}
-class AuthError extends AuthState {
-  final String message;
-}
-```
-
-```dart
-// auth_bloc.dart
-class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
-  AuthBloc(this._authRepository, this._storage) : super(AuthInitial()) {
-    on<AuthStarted>(_onStarted);
-    on<AuthSignIn>(_onSignIn);
-    on<AuthSignOut>(_onSignOut);
-  }
-
-  Future<void> _onStarted(AuthStarted event, Emitter<AuthState> emit) async {
-    final token = await _storage.read(key: 'auth_token');
-    if (token != null) {
-      // Optionally verify session here
-      emit(AuthAuthenticated(user: cachedUser, token: token));
-    } else {
-      emit(AuthUnauthenticated());
-    }
-  }
-}
-```
-
-### Feature Cubits
-
-Each screen owns a lightweight Cubit for its local UI state.
-
-```dart
-// sign_in_cubit.dart
-class SignInCubit extends Cubit<SignInState> {
-  SignInCubit(this._authRepository) : super(SignInInitial());
-
-  Future<void> signIn(String email, String password) async {
-    emit(SignInLoading());
-    try {
-      final response = await _authRepository.signIn(email: email, password: password);
-      emit(SignInSuccess(response));
-    } on ApiException catch (e) {
-      emit(SignInFailure(e.message));
-    }
-  }
-}
-```
-
-### BlocListener for Side Effects
-
-Navigation and snackbars are side effects — they live in the view, not the BLoC.
-
-```dart
-// sign_in_view.dart
-BlocListener<SignInCubit, SignInState>(
-  listener: (context, state) {
-    if (state is SignInSuccess) {
-      // AuthBloc handles global auth state
-      context.read<AuthBloc>().add(AuthSignIn(response: state.response));
-      context.go(AppRoutes.home);
-    }
-    if (state is SignInFailure) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.message)),
-      );
-    }
-  },
-  child: SignInForm(),
-)
-```
-
----
-
-## Routing (go_router)
-
-Route guards are implemented as a `redirect` callback on `GoRouter` that reads `AuthBloc` state. The router refreshes automatically on auth state changes.
-
-```dart
-// app_router.dart
-GoRouter appRouter(AuthBloc authBloc) => GoRouter(
-  refreshListenable: GoRouterRefreshStream(authBloc.stream),
-  redirect: (context, state) {
-    final authState = authBloc.state;
-    final isAuthenticated = authState is AuthAuthenticated;
-    final isOnAuthRoute = state.matchedLocation.startsWith('/sign-in')
-        || state.matchedLocation.startsWith('/sign-up');
-
-    if (!isAuthenticated && !isOnAuthRoute) return '/sign-in';
-    if (isAuthenticated && isOnAuthRoute) return '/home';
-    return null;
-  },
-  routes: [
-    GoRoute(path: '/splash',        builder: (_, __) => const SplashView()),
-    GoRoute(path: '/sign-in',       builder: (_, __) => const SignInView()),
-    GoRoute(path: '/sign-up',       builder: (_, __) => const SignUpView()),
-    GoRoute(path: '/forgot-password', builder: (_, __) => const ForgotPasswordView()),
-    GoRoute(
-      path: '/reset-password',
-      builder: (_, state) => ResetPasswordView(
-        token: state.uri.queryParameters['token'] ?? '',
-      ),
-    ),
-    GoRoute(
-      path: '/verify-email',
-      builder: (_, state) => VerifyEmailView(
-        token: state.uri.queryParameters['token'] ?? '',
-      ),
-    ),
-    GoRoute(path: '/two-factor',    builder: (_, __) => const TwoFactorView()),
-    GoRoute(path: '/home',          builder: (_, __) => const HomeView()),
-    GoRoute(path: '/profile',       builder: (_, __) => const ProfileView()),
-    GoRoute(path: '/settings',      builder: (_, __) => const SettingsView()),
-  ],
-);
-```
-
----
-
-## DI (RepositoryProvider + BlocProvider)
-
-Dependencies are provided top-down using the `flutter_bloc` provider tree. No service locator.
-
-```dart
-// main.dart
-MultiBlocProvider(
-  providers: [
-    RepositoryProvider(create: (_) => DioService()),
-    RepositoryProvider(create: (ctx) => AuthRepository(ctx.read<DioService>())),
-    RepositoryProvider(create: (ctx) => UserRepository(ctx.read<DioService>())),
-    BlocProvider(
-      create: (ctx) => AuthBloc(ctx.read<AuthRepository>())..add(AuthStarted()),
-    ),
-  ],
-  child: MaterialApp.router(
-    routerConfig: appRouter(/* AuthBloc from context */),
-  ),
-)
-```
-
----
-
-## Dio Interceptor (Bearer + Refresh)
-
-```dart
-// dio_service.dart
-class AuthInterceptor extends Interceptor {
-  AuthInterceptor(this._storage, this._dio);
-
-  @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    final token = await _storage.read(key: 'auth_token');
-    if (token != null) {
-      options.headers['Authorization'] = 'Bearer $token';
-    }
-    handler.next(options);
-  }
-
-  @override
-  void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response?.statusCode == 401) {
-      try {
-        final newToken = await _refreshToken();
-        err.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-        final retryResponse = await _dio.fetch(err.requestOptions);
-        return handler.resolve(retryResponse);
-      } catch (_) {
-        // Refresh failed — AuthBloc will handle sign-out
-      }
-    }
-    handler.next(err);
-  }
-}
-```
-
----
-
-## Auth Flow
-
-### Sign-In
-
-```dart
-// sign_in_cubit.dart
-Future<void> signIn(String email, String password) async {
-  emit(SignInLoading());
-  try {
-    final response = await _authRepository.signIn(email: email, password: password);
-    emit(SignInSuccess(response));
-  } on ApiException catch (e) {
-    emit(SignInFailure(e.message));
-  }
-}
-
-// sign_in_view.dart — BlocListener reacts to success
-if (state is SignInSuccess) {
-  context.read<AuthBloc>().add(AuthSignIn(response: state.response));
-  await _notificationService.registerDeviceToken();
-  context.go(AppRoutes.home);
-}
-```
-
----
-
-## Firebase Setup
-
-### Push Notifications
-
-```dart
-// notification_service.dart
-class NotificationService {
-  Future<void> init() async {
-    await FirebaseMessaging.instance.requestPermission();
-    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
-  }
-
-  Future<void> registerDeviceToken() async {
-    final token = await FirebaseMessaging.instance.getToken();
-    if (token == null) return;
-    await _userRepository.registerDeviceToken(
-      token: token,
-      platform: Platform.isAndroid ? 'android' : 'ios',
-    );
-  }
-}
-```
-
-### Firebase Files Required
-
-- `google-services.json` → `android/app/`
-- `GoogleService-Info.plist` → `ios/Runner/`
-- Run `flutterfire configure` after setting up Firebase project
-
----
-
-## OAuth Deep Links
-
-```dart
-// main.dart — listen for deep links
-void _initDeepLinks(AuthBloc authBloc) {
-  AppLinks().uriLinkStream.listen((uri) {
-    if (uri.scheme == 'myapp' && uri.host == 'auth') {
-      final token = uri.queryParameters['token'];
-      if (token != null) {
-        authBloc.add(AuthTokenReceived(token: token));
-      }
-    }
-  });
-}
-```
-
-Android `AndroidManifest.xml`:
-```xml
-<intent-filter android:autoVerify="true">
-  <action android:name="android.intent.action.VIEW"/>
-  <category android:name="android.intent.category.DEFAULT"/>
-  <category android:name="android.intent.category.BROWSABLE"/>
-  <data android:scheme="myapp" android:host="auth"/>
-</intent-filter>
-```
-
-iOS `Info.plist`:
-```xml
-<key>CFBundleURLTypes</key>
-<array>
-  <dict>
-    <key>CFBundleURLSchemes</key>
-    <array><string>myapp</string></array>
-  </dict>
-</array>
-```
-
----
-
-## Environment Variables
-
-```env
-# .env (git-ignored)
-API_URL=http://10.0.2.2:5555     # Android emulator → host machine
-# API_URL=http://localhost:5555  # iOS simulator
-```
-
-```dart
-// main.dart
-await dotenv.load(fileName: '.env');
-final apiUrl = dotenv.env['API_URL']!;
-```
-
----
-
-## Models Pattern (Freezed + JSON)
-
-```dart
-// user.model.dart
-@freezed
-class User with _$User {
-  const factory User({
-    required String id,
-    required String email,
-    String? name,
-    String? image,
-    @JsonKey(name: 'emailVerified') required bool emailVerified,
-    @JsonKey(name: 'createdAt') required DateTime createdAt,
-  }) = _User;
-
-  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
-}
-```
-
-Generate: `flutter pub run build_runner build --delete-conflicting-outputs`
-
----
-
-## Setup
+## Quick start
 
 ```bash
-# Create project
-flutter create --org com.yourcompany --platforms ios,android myapp
-cd myapp
+# 1. clone & install
+git clone <your-fork> myapp && cd myapp
+flutter pub get
 
-# Install dependencies
-flutter pub add flutter_bloc bloc equatable hydrated_bloc go_router \
-  flutter_secure_storage dio flutter_dotenv image_picker \
-  cached_network_image flutter_form_builder form_builder_validators \
-  app_links firebase_core firebase_messaging firebase_analytics
+# 2. configure
+cp .env.example .env
+# edit API_URL, APP_SCHEME, and feature flags
 
-flutter pub add --dev bloc_test freezed json_serializable build_runner \
-  mocktail flutter_lints
-
-# FlutterFire CLI
+# 3. firebase (required — FCM + Analytics init on startup)
 dart pub global activate flutterfire_cli
 flutterfire configure
 
-# Run
+# 4. run
 flutter run
+
+# 5. verify
+flutter test
+flutter analyze
+```
+
+Detailed walkthrough with troubleshooting: [docs/getting-started.md](./docs/getting-started.md).
+
+---
+
+## Project layout
+
+```
+lib/
+├── main.dart                    # DI wiring, deep link handler
+├── firebase_options.dart        # generated by flutterfire_cli
+└── app/
+    ├── core/
+    │   ├── config/              # FeatureFlags
+    │   ├── errors/              # ApiException (statusCode, message, fieldErrors, code, details)
+    │   ├── router/              # GoRouter + AuthBloc-driven redirect
+    │   ├── theme/               # Material 3 theme builder
+    │   └── utils/               # response_parser, snackbar_helper
+    ├── data/
+    │   ├── models/              # User, Organization, AdminUser, AuditLog, ...
+    │   ├── providers/           # *.provider.dart  (raw Dio → /v1/api/*)
+    │   └── repositories/        # *.repository.dart (envelope unwrap + error mapping)
+    ├── modules/                 # feature = folder with cubit + state + view
+    │   ├── auth/{sign_in,sign_up,forgot_password,reset_password,verify_email,
+    │   │        two_factor,magic_link}/
+    │   ├── home/ profile/ settings/ splash/ theme/
+    │   ├── admin/               # users, audit logs, stats
+    │   └── organizations/       # list, detail, invite, accept
+    ├── routes/app_routes.dart
+    └── services/                # AuthService, DioService, NotificationService
+test/
+├── unit/                        # repositories, cubits, models, exceptions
+├── widget/                      # view rendering + loading states
+└── integration_test/
 ```
 
 ---
 
-## Known Bugs
+## Auth flow
 
-The following bugs were identified during the initial audit and are tracked in [todo.md](./todo.md#fl0--bug-registry).
+1. App starts → `AuthBloc.add(AuthStarted)` → reads token from secure storage.
+2. If token + user present → `AuthAuthenticated(user, token)` → GoRouter redirects to `/home`.
+3. Otherwise → `AuthUnauthenticated` → redirect to `/sign-in`.
+4. Sign-in success → view dispatches `AuthUserChanged(user, token)` → router redirects.
+5. 401 on any API call → `DioService` refreshes the token transparently; if refresh fails, `AuthService.signOut()` broadcasts `AuthUnauthenticated` and the router sends the user back to `/sign-in`.
 
-| ID | Severity | Description |
-|----|----------|-------------|
-| BUG-01 | Critical | `DioService` interceptor is a no-op — Bearer token never attached to requests |
-| BUG-02 | Critical | `AuthService.refreshToken()` always returns `false` — stub, never calls refresh endpoint |
-| BUG-03 | Critical | `InitialBindings` missing `AuthRepository`, `UserRepository`, `AuthProvider`, `UserProvider`, `NotificationService` |
-| BUG-04 | Critical | `AuthService.setCurrentUser()` serialises User as URL query string — fragile, size-limited |
-| BUG-05 | High | `TwoFactorController.verify()` always succeeds without calling any API |
-| BUG-06 | High | `ProfileView` `CircleAvatar` never renders the user's image URL |
-| BUG-07 | High | No token-refresh-on-401 in `DioService` — users silently signed out on expiry |
-| BUG-08 | High | `AuthService.signOut()` uses hard-coded route string instead of `AppRoutes.signIn` |
-| BUG-09 | Medium | `ApiException.fieldErrors` never read — API field validation errors silently dropped |
-| BUG-10 | Medium | Controllers use `e.toString()` for errors instead of `ApiException.message` |
+Admin routes are additionally gated by `authState.user.role == 'admin'` inside the same `redirect`.
 
 ---
 
-## Best Practices
+## Response conventions
 
-- **Never** store the Bearer token in `shared_preferences` — always use `flutter_secure_storage`
-- **BlocBuilder** wraps only the smallest subtree that needs to re-render
-- **BlocListener** handles all side effects (navigation, snackbars) — never inside a BLoC
-- **AuthBloc** is the single source of truth for authentication state; Cubits own only local UI state
-- All API calls in **providers**, business logic in **repositories**, UI state in **cubits/blocs**
-- `GoRouter.redirect` is the single place for auth-based route guards — no per-route middleware
-- Platform check (`Platform.isAndroid`) in services, never in widgets
-- All `async` Dio calls wrapped in `try/catch (DioException)`; mapped to typed `AppException`
-- Deep links tested on real devices — emulators may not handle custom schemes correctly
+Non-auth endpoints wrap responses:
+
+```json
+{ "success": true, "data": {...}, "meta": { "timestamp": "...", "requestId": "..." } }
+```
+
+Repositories strip this with `unwrapEnvelope` / `unwrapEnvelopeList` from [response_parser.dart](./lib/app/core/utils/response_parser.dart).
+
+Paginated endpoints put cursor state in `meta.pagination`:
+
+```json
+"meta": { "pagination": { "limit": 20, "hasNextPage": true, "nextCursor": "abc" } }
+```
+
+Error responses use:
+
+```json
+{ "success": false, "error": { "code": "VALIDATION_ERROR", "message": "...", "details": [...] } }
+```
+
+`ApiException.fromDioError` maps `error.details` into a `Map<String, String> fieldErrors`, surfaced in forms via `TextFormField.forceErrorText`.
 
 ---
 
-## Quick Reference
+## Security
 
-### Common Commands
+- Bearer tokens live in `flutter_secure_storage` (iOS Keychain / Android Keystore). Never in `SharedPreferences`.
+- All list/read Dio calls accept a `CancelToken`. Paginated cubits cancel stale requests on new calls and on `close()`.
+- Deep link handler only accepts the scheme from `APP_SCHEME` (or `myapp` as fallback) — other schemes are ignored.
+- 401 refresh uses a separate Dio instance to prevent interceptor recursion.
+
+---
+
+## Common commands
 
 ```bash
-# Install dependencies
-flutter pub get
-
-# Generate freezed / json_serializable code
-flutter pub run build_runner build --delete-conflicting-outputs
-
-# Run the app
-flutter run
-
-# Build debug APK
-flutter build apk --debug
-
-# Build release APK
-flutter build apk --release
-
-# Build iOS (requires macOS)
-flutter build ios --release
-
-# Run tests
-flutter test
-
-# Run with coverage
+flutter pub get                                              # install deps
+dart run build_runner build --delete-conflicting-outputs     # regenerate *.freezed.dart / *.g.dart
+flutter run                                                  # run on attached device / sim
+flutter test                                                 # unit + widget tests
 flutter test --coverage
-
-# Analyze code
-flutter analyze
-
-# Clean and rebuild
-flutter clean && flutter pub get
+flutter analyze                                              # lint
+flutter build apk --release
+flutter build ios --release                                  # macOS only
+flutter clean && flutter pub get                             # nuke caches
 ```
-
-### Directory Structure
-
-| Directory | Purpose |
-|-----------|---------|
-| `lib/app/core/` | Core utilities, router, errors |
-| `lib/app/data/` | Models, providers, repositories |
-| `lib/app/modules/` | Feature modules — each contains a Cubit/BLoC, state, and view |
-| `lib/app/services/` | Long-lived singletons (Dio, notifications) |
-| `test/` | Unit and widget tests |
-| `integration_test/` | Integration tests |
-
-### API Endpoints Expected
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/sign-in/email` | Sign in with email/password |
-| POST | `/api/auth/sign-up/email` | Create new account |
-| POST | `/api/auth/sign-out` | Sign out |
-| POST | `/api/auth/forgot-password` | Request password reset |
-| POST | `/api/auth/reset-password` | Reset password with token |
-| POST | `/api/auth/change-password` | Change password |
-| POST | `/api/auth/verify-email` | Verify email address |
-| POST | `/api/auth/token/refresh` | Refresh access token |
-| GET | `/api/users/me` | Get current user |
-| PATCH | `/api/users/me` | Update user profile |
-| POST | `/api/users/me/avatar` | Upload avatar |
-| POST | `/api/users/device-tokens` | Register FCM token |
 
 ---
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines.
+See [CONTRIBUTING.md](./CONTRIBUTING.md). Tests must pass (`flutter test`) and analyzer must be clean (`flutter analyze`) before a PR is merged.
 
 ## License
 
-MIT License - see [LICENSE](./LICENSE) for details.
+MIT — see [LICENSE](./LICENSE).
