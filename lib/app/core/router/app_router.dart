@@ -72,7 +72,8 @@ GoRouter createRouter({
         return location == AppRoutes.splash ? null : AppRoutes.splash;
       }
 
-      final isOnAuthRoute = _authRoutes.contains(location) ||
+      final isOnAuthRoute =
+          _authRoutes.contains(location) ||
           location.startsWith(AppRoutes.resetPassword) ||
           location.startsWith(AppRoutes.verifyEmail);
 
@@ -98,18 +99,16 @@ GoRouter createRouter({
       GoRoute(
         path: AppRoutes.signIn,
         builder: (context, _) => BlocProvider(
-          create: (_) => SignInCubit(
-            authRepository: context.read<AuthRepository>(),
-          ),
+          create: (_) =>
+              SignInCubit(authRepository: context.read<AuthRepository>()),
           child: const SignInView(),
         ),
       ),
       GoRoute(
         path: AppRoutes.signUp,
         builder: (context, _) => BlocProvider(
-          create: (_) => SignUpCubit(
-            authRepository: context.read<AuthRepository>(),
-          ),
+          create: (_) =>
+              SignUpCubit(authRepository: context.read<AuthRepository>()),
           child: const SignUpView(),
         ),
       ),
@@ -149,9 +148,8 @@ GoRouter createRouter({
       GoRoute(
         path: AppRoutes.twoFactor,
         builder: (context, _) => BlocProvider(
-          create: (_) => TwoFactorCubit(
-            authRepository: context.read<AuthRepository>(),
-          ),
+          create: (_) =>
+              TwoFactorCubit(authRepository: context.read<AuthRepository>()),
           child: const TwoFactorView(),
         ),
       ),
@@ -160,9 +158,8 @@ GoRouter createRouter({
         builder: (context, state) {
           final token = state.uri.queryParameters['token'];
           return BlocProvider(
-            create: (_) => MagicLinkCubit(
-              authRepository: context.read<AuthRepository>(),
-            ),
+            create: (_) =>
+                MagicLinkCubit(authRepository: context.read<AuthRepository>()),
             child: MagicLinkView(token: token),
           );
         },
@@ -205,18 +202,16 @@ GoRouter createRouter({
       GoRoute(
         path: AppRoutes.admin,
         builder: (context, _) => BlocProvider(
-          create: (_) => AdminStatsCubit(
-            adminRepository: context.read<AdminRepository>(),
-          ),
+          create: (_) =>
+              AdminStatsCubit(adminRepository: context.read<AdminRepository>()),
           child: const AdminDashboardView(),
         ),
       ),
       GoRoute(
         path: AppRoutes.adminUsers,
         builder: (context, _) => BlocProvider(
-          create: (_) => AdminUsersCubit(
-            adminRepository: context.read<AdminRepository>(),
-          ),
+          create: (_) =>
+              AdminUsersCubit(adminRepository: context.read<AdminRepository>()),
           child: const AdminUsersView(),
         ),
       ),
@@ -240,9 +235,8 @@ GoRouter createRouter({
       GoRoute(
         path: AppRoutes.adminAuditLogs,
         builder: (context, _) => BlocProvider(
-          create: (_) => AuditLogsCubit(
-            adminRepository: context.read<AdminRepository>(),
-          ),
+          create: (_) =>
+              AuditLogsCubit(adminRepository: context.read<AdminRepository>()),
           child: const AuditLogsView(),
         ),
       ),
@@ -260,7 +254,7 @@ GoRouter createRouter({
       GoRoute(
         path: '${AppRoutes.organizations}/:id',
         builder: (context, state) {
-          final orgId = state.pathParameters['id']!;
+          final orgId = state.pathParameters['id'];
           return BlocProvider(
             create: (_) => OrgDetailCubit(
               orgRepository: context.read<OrganizationRepository>(),
@@ -272,7 +266,7 @@ GoRouter createRouter({
       GoRoute(
         path: '${AppRoutes.organizations}/:id/invite',
         builder: (context, state) {
-          final orgId = state.pathParameters['id']!;
+          final orgId = state.pathParameters['id'];
           return BlocProvider(
             create: (_) => OrgInvitationCubit(
               orgRepository: context.read<OrganizationRepository>(),

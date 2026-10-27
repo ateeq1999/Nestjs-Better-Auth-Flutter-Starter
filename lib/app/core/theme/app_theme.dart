@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -63,8 +64,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
-          padding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           textStyle: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
@@ -79,8 +79,7 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radius),
           ),
@@ -88,8 +87,7 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radius),
           ),
@@ -98,22 +96,20 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radius - 2),
           ),
-          textStyle: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: scheme.surfaceContainerHigh.withValues(alpha: 0.6),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
           borderSide: BorderSide.none,
@@ -134,10 +130,7 @@ class AppTheme {
           color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
           fontSize: 14,
         ),
-        labelStyle: TextStyle(
-          color: scheme.onSurfaceVariant,
-          fontSize: 14,
-        ),
+        labelStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 14),
       ),
       dividerTheme: DividerThemeData(
         color: scheme.outlineVariant.withValues(alpha: 0.6),
@@ -189,9 +182,7 @@ class AppTheme {
         backgroundColor: scheme.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(radius + 8),
-          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(radius + 8)),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -266,16 +257,8 @@ class AppTheme {
         fontWeight: FontWeight.w600,
         color: scheme.onSurface,
       ),
-      bodyLarge: TextStyle(
-        fontSize: 16,
-        color: scheme.onSurface,
-        height: 1.5,
-      ),
-      bodyMedium: TextStyle(
-        fontSize: 14,
-        color: scheme.onSurface,
-        height: 1.5,
-      ),
+      bodyLarge: TextStyle(fontSize: 16, color: scheme.onSurface, height: 1.5),
+      bodyMedium: TextStyle(fontSize: 14, color: scheme.onSurface, height: 1.5),
       bodySmall: TextStyle(
         fontSize: 12,
         color: scheme.onSurfaceVariant,
